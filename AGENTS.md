@@ -1,4 +1,4 @@
-# Novel World Wiki Agent — Schema & Workflow Instructions
+# Storyforge Wiki — Schema & Workflow Instructions
 
 This repository is now a hybrid novel and worldbuilding wiki system.
 

@@ -1,13 +1,35 @@
-# Novel World Wiki Agent
+# Storyforge Wiki
 
-Agent-first tooling for building a **story bible + worldbuilding wiki** from manuscript files.
+Storyforge Wiki is a Claude Code-first tool for turning your manuscript and lore files into a structured **story bible + worldbuilding wiki**.
 
-## What It Does
+## Use with Claude Code
 
-- Ingest chapter drafts, lore docs, and notes from `raw/`
-- Materialize/update canon pages for characters, locations, factions, artifacts, systems, events, arcs, chapters, and timeline
-- Run continuity linting and structural health checks
-- Build a typed narrative graph and interactive HTML view
+From repo root:
+
+```bash
+claude
+```
+
+Then use slash commands:
+
+- `/wiki-ingest raw/novel/` - ingest a file or whole folder
+- `/wiki-query What does Mira know by chapter 12?`
+- `/wiki-health`
+- `/wiki-lint`
+- `/wiki-graph`
+
+You can also use plain prompts in Claude:
+
+- `ingest raw/`
+- `query: list timeline contradictions in arc two`
+
+## Recommended Claude Workflow
+
+1. Drop docs into `raw/`
+2. Run `/wiki-ingest raw/`
+3. Run `/wiki-lint` for continuity/canon issues
+4. Ask questions with `/wiki-query ...`
+5. Run `/wiki-graph` to regenerate narrative relationships
 
 ## Wiki Layout
 
@@ -30,46 +52,24 @@ wiki/
   syntheses/
 ```
 
-## Core Commands
+## Optional Python Entrypoints
+
+If you want direct script usage:
 
 ```bash
 python tools/ingest.py raw/novel/chapter-01.md
-python tools/query.py "What does Kira know by chapter 8?"
-python tools/lint.py --save
+python tools/query.py "What changed for Kira in arc one?"
 python tools/health.py --save
+python tools/lint.py --save
 python tools/build_graph.py --report --save
-python tools/migrate_legacy_to_novel.py
-```
-
-## Canon Model
-
-All pages use frontmatter fields such as:
-- `type`
-- `canon_status`
-- `spoiler_level`
-- `era`
-- `aliases`
-- `relationships`
-- `first_appearance`
-- `last_updated`
-
-## Migration
-
-Legacy generic folders (`wiki/entities`, `wiki/concepts`) are migrated into fiction taxonomy via:
-
-```bash
-python tools/migrate_legacy_to_novel.py
 ```
 
 ## Quartz Publishing
-
-Use Quartz to publish the generated wiki as a beautiful website:
 
 ```bash
 python tools/sync_to_quartz.py "../my-world-wiki" --clean
 ```
 
-Full setup guide:
+Guides:
 - `docs/quartz-worldbuilding-guide.md`
-- Theme presets:
-  - `docs/quartz-theme-presets.md`
+- `docs/quartz-theme-presets.md`

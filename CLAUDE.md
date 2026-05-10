@@ -1,4 +1,4 @@
-# Novel World Wiki Agent — Schema & Workflow Instructions
+# Storyforge Wiki — Schema & Workflow Instructions
 
 This wiki is maintained by Claude Code as a hybrid story bible and worldbuilding system.
 

@@ -1,4 +1,4 @@
-# Novel World Wiki Agent — Schema & Workflow Instructions
+# Storyforge Wiki — Schema & Workflow Instructions
 
 This wiki is maintained by Gemini CLI as a novel and worldbuilding knowledge system.
 

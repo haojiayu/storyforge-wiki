@@ -1,0 +1,21 @@
+# Generated wiki/content artifacts
+raw/*
+wiki/*
+graph/*
+
+# Keep directory placeholders only
+!raw/.gitkeep
+!wiki/.gitkeep
+!graph/.gitkeep
+
+# Python and local tooling artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

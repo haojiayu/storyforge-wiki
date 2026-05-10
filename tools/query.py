@@ -1,181 +1,170 @@
 #!/usr/bin/env python3
-"""
-Query the LLM Wiki.
+"""Query the Novel World Wiki with timeline/arc-aware retrieval."""
 
-Usage:
-    python tools/query.py "What are the main themes across all sources?"
-    python tools/query.py "How does ConceptA relate to ConceptB?" --save
-    python tools/query.py "Summarize everything about EntityName" --save synthesis/my-analysis.md
+from __future__ import annotations
 
-Flags:
-    --save              Save the answer back into the wiki (prompts for filename)
-    --save <path>       Save to a specific wiki path
-"""
-
-import sys
-import re
-import json
 import argparse
-from pathlib import Path
+import json
+import os
+import re
+import sys
 from datetime import date
+from pathlib import Path
 
-# Bootstrap shared utilities
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from tools._utils import (
-    REPO_ROOT, WIKI_DIR, INDEX_FILE, LOG_FILE, SCHEMA_FILE,
-    read_file, write_file, call_llm, append_log,
-)
+REPO_ROOT = Path(__file__).parent.parent
+WIKI_DIR = REPO_ROOT / "wiki"
+INDEX_FILE = WIKI_DIR / "index.md"
+LOG_FILE = WIKI_DIR / "log.md"
+SCHEMA_FILE = REPO_ROOT / "CLAUDE.md"
+
+PRIORITY_DIRS = ["chapters", "arcs", "timeline", "characters", "events", "systems"]
 
 
-def find_relevant_pages(question: str, index_content: str) -> list[Path]:
-    """Extract linked pages from index that seem relevant to the question.
-    Uses character-level matching for CJK compatibility."""
-    md_links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', index_content)
-    question_lower = question.lower()
-    relevant = []
+def read_file(path: Path) -> str:
+    return path.read_text(encoding="utf-8") if path.exists() else ""
 
-    for title, href in md_links:
-        title_lower = title.lower()
-        # For CJK: check if any 2+ char substring of the title appears in question
-        has_cjk = any('\u4e00' <= ch <= '\u9fff' for ch in title)
-        if has_cjk:
-            # Sliding window: check if any 2-char CJK bigram from title exists in question
-            matched = any(
-                title_lower[j:j+2] in question_lower
-                for j in range(len(title_lower) - 1)
-                if any('\u4e00' <= c <= '\u9fff' for c in title_lower[j:j+2])
-            )
-        else:
-            # Latin: original word-based match (lowered threshold to >2)
-            matched = any(word in question_lower for word in title_lower.split() if len(word) > 2)
 
-        if matched:
-            p = WIKI_DIR / href
-            if p.exists() and p not in relevant:
-                relevant.append(p)
+def write_file(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    print(f"  saved: {path.relative_to(REPO_ROOT)}")
 
-    # Also try graph-based expansion: find neighbors of matched pages
-    graph_json = REPO_ROOT / "graph" / "graph.json"
-    if graph_json.exists() and relevant:
-        try:
-            graph_data = json.loads(graph_json.read_text())
-            page_ids = {p.relative_to(WIKI_DIR).as_posix().replace('.md', '') for p in relevant}
-            neighbors = set()
-            for edge in graph_data.get('edges', []):
-                if edge.get('confidence', 0) >= 0.7:
-                    if edge['from'] in page_ids:
-                        neighbors.add(edge['to'])
-                    elif edge['to'] in page_ids:
-                        neighbors.add(edge['from'])
-            for nid in neighbors:
-                np = WIKI_DIR / f"{nid}.md"
-                if np.exists() and np not in relevant:
-                    relevant.append(np)
-        except (json.JSONDecodeError, KeyError):
-            pass
 
-    # Always include overview
+def call_llm(prompt: str, model_env: str, default_model: str, max_tokens: int = 4096) -> str:
+    from litellm import completion
+
+    model = os.getenv(model_env, default_model)
+    response = completion(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=max_tokens,
+    )
+    return response.choices[0].message.content
+
+
+def score_page(question: str, path: Path, content: str) -> int:
+    q = question.lower()
+    score = 0
+    for token in re.findall(r"[a-zA-Z0-9_-]{3,}", q):
+        if token in path.stem.lower() or token in content.lower():
+            score += 2
+    if any(word in q for word in ["chapter", "timeline", "arc", "canon", "continuity", "know by"]):
+        if path.parts[-2] in PRIORITY_DIRS:
+            score += 5
+    if "spoiler" in q and "spoiler_level" in content:
+        score += 3
+    return score
+
+
+def find_relevant_pages(question: str, cap: int = 18) -> list[Path]:
+    pages = [p for p in WIKI_DIR.rglob("*.md") if p.name not in {"index.md", "log.md", "lint-report.md", "health-report.md"}]
+    ranked: list[tuple[int, Path]] = []
+    for p in pages:
+        content = read_file(p)
+        ranked.append((score_page(question, p, content), p))
+    ranked.sort(key=lambda item: item[0], reverse=True)
+    selected = [p for score, p in ranked if score > 0][:cap]
     overview = WIKI_DIR / "overview.md"
-    if overview.exists() and overview not in relevant:
-        relevant.insert(0, overview)
-    return relevant[:15]  # cap to avoid context overflow
+    if overview.exists() and overview not in selected:
+        selected.insert(0, overview)
+    return selected
 
 
-def query(question: str, save_path: str | None = None):
-    today = date.today().isoformat()
+def append_log(entry: str) -> None:
+    existing = read_file(LOG_FILE)
+    LOG_FILE.write_text(entry.strip() + "\n\n" + existing, encoding="utf-8")
 
-    # Step 1: Read index
-    index_content = read_file(INDEX_FILE)
-    if not index_content:
-        print("Wiki is empty. Ingest some sources first with: python tools/ingest.py <source>")
-        sys.exit(1)
 
-    # Step 2: Find relevant pages
-    relevant_pages = find_relevant_pages(question, index_content)
-
-    # If no keyword match, ask Claude to identify relevant pages from the index
-    if not relevant_pages or len(relevant_pages) <= 1:
-        print("  selecting relevant pages via API...")
-        prompt = f"Given this wiki index:\n\n{index_content}\n\nWhich pages are most relevant to answering: \"{question}\"\n\nReturn ONLY a JSON array of relative file paths (as listed in the index), e.g. [\"sources/foo.md\", \"concepts/Bar.md\"]. Maximum 10 pages."
-        raw = call_llm(prompt, "LLM_MODEL_FAST", "claude-3-5-haiku-latest", max_tokens=512)
-        raw = raw.strip()
-        raw = re.sub(r"^```(?:json)?\s*", "", raw)
-        raw = re.sub(r"\s*```$", "", raw)
-        try:
-            paths = json.loads(raw)
-            relevant_pages = [WIKI_DIR / p for p in paths if (WIKI_DIR / p).exists()]
-        except (json.JSONDecodeError, TypeError):
-            pass
-
-    # Step 3: Read relevant pages
+def synthesize(question: str, pages: list[Path]) -> str:
     pages_context = ""
-    for p in relevant_pages:
-        rel = p.relative_to(REPO_ROOT)
-        pages_context += f"\n\n### {rel}\n{p.read_text(encoding='utf-8')}"
-
-    if not pages_context:
-        pages_context = f"\n\n### wiki/index.md\n{index_content}"
-
+    for p in pages:
+        pages_context += f"\n\n### {p.relative_to(REPO_ROOT)}\n{read_file(p)[:6000]}"
     schema = read_file(SCHEMA_FILE)
-
-    # Step 4: Synthesize answer
-    print(f"  synthesizing answer from {len(relevant_pages)} pages...")
-    prompt = f"""You are querying an LLM Wiki to answer a question. Use the wiki pages below to synthesize a thorough answer. Cite sources using [[PageName]] wikilink syntax.
-
+    prompt = f"""You are answering a novel/worldbuilding wiki query.
 Schema:
 {schema}
 
-Wiki pages:
+Question:
+{question}
+
+Wiki context:
 {pages_context}
 
-Question: {question}
-
-Write a well-structured markdown answer with headers, bullets, and [[wikilink]] citations. At the end, add a ## Sources section listing the pages you drew from.
+Write a markdown answer optimized for canon and continuity use:
+- Explicitly state uncertainty for contested canon.
+- Use timeline/chapter ordering when relevant.
+- Cite supporting pages as [[PageName]].
+- End with:
+## Sources
+- ...
 """
-    answer = call_llm(prompt, "LLM_MODEL", "claude-3-5-sonnet-latest", max_tokens=4096)
+    try:
+        return call_llm(prompt, "LLM_MODEL", "anthropic/claude-3-5-sonnet-latest", max_tokens=4096)
+    except Exception:
+        sources = "\n".join(f"- [[{p.stem}]]" for p in pages[:12])
+        return (
+            "## Fallback Answer\n"
+            "LLM provider is not configured, so this is a retrieval-only fallback.\n\n"
+            f"Question: {question}\n\n"
+            "Use these pages as starting points:\n"
+            f"{sources}\n\n"
+            "## Sources\n"
+            f"{sources}"
+        )
+
+
+def save_synthesis(question: str, answer: str, save_path: str) -> None:
+    today = date.today().isoformat()
+    full = WIKI_DIR / save_path
+    frontmatter = (
+        "---\n"
+        f"title: \"{question[:80]}\"\n"
+        "type: synthesis\n"
+        "tags: []\n"
+        "sources: []\n"
+        "canon_status: canon\n"
+        "spoiler_level: medium\n"
+        "era: \"\"\n"
+        "aliases: []\n"
+        "relationships: []\n"
+        "first_appearance: \"\"\n"
+        f"last_updated: {today}\n"
+        "---\n\n"
+    )
+    write_file(full, frontmatter + answer)
+
+
+def query(question: str, save_path: str | None) -> None:
+    if not read_file(INDEX_FILE):
+        print("Wiki index missing/empty. Ingest first.")
+        sys.exit(1)
+
+    pages = find_relevant_pages(question)
+    if not pages:
+        pages = [INDEX_FILE]
+    print(f"  querying with {len(pages)} pages")
+    answer = synthesize(question, pages)
     print("\n" + "=" * 60)
     print(answer)
     print("=" * 60)
 
-    # Step 5: Optionally save answer
+    actual_save = save_path
     if save_path is not None:
         if save_path == "":
-            # Prompt for filename
-            slug = input("\nSave as (slug, e.g. 'my-analysis'): ").strip()
-            if not slug:
-                print("Skipping save.")
-                return
-            save_path = f"syntheses/{slug}.md"
+            slug = re.sub(r"[^a-z0-9]+", "-", question.lower()).strip("-")[:60] or "synthesis"
+            actual_save = f"syntheses/{slug}.md"
+        save_synthesis(question, answer, actual_save)
 
-        full_save_path = WIKI_DIR / save_path
-        frontmatter = f"""---
-title: "{question[:80]}"
-type: synthesis
-tags: []
-sources: []
-last_updated: {today}
----
-
-"""
-        write_file(full_save_path, frontmatter + answer)
-
-        # Update index
-        index_content = read_file(INDEX_FILE)
-        entry = f"- [{question[:60]}]({save_path}) — synthesis"
-        if "## Syntheses" in index_content:
-            index_content = index_content.replace("## Syntheses\n", f"## Syntheses\n{entry}\n")
-            INDEX_FILE.write_text(index_content, encoding="utf-8")
-        print(f"  indexed: {save_path}")
-
-    # Append to log
-    append_log(f"## [{today}] query | {question[:80]}\n\nSynthesized answer from {len(relevant_pages)} pages." +
-               (f" Saved to {save_path}." if save_path else ""))
+    append_log(
+        f"## [{date.today().isoformat()}] query | {question[:80]}\n\n"
+        f"Synthesized from {len(pages)} pages."
+        + (f" Saved to {actual_save}." if actual_save else "")
+    )
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Query the LLM Wiki")
-    parser.add_argument("question", help="Question to ask the wiki")
-    parser.add_argument("--save", nargs="?", const="", default=None,
-                        help="Save answer to wiki (optionally specify path)")
+    parser = argparse.ArgumentParser(description="Query the Novel World Wiki")
+    parser.add_argument("question")
+    parser.add_argument("--save", nargs="?", const="", default=None)
     args = parser.parse_args()
     query(args.question, args.save)

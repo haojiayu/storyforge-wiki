@@ -1,14 +1,14 @@
-Query the LLM Wiki and synthesize an answer.
+Query the Novel World Wiki and synthesize canon-aware answers.
 
 Usage: /wiki-query $ARGUMENTS
 
-$ARGUMENTS is the question to answer, e.g. `What are the main themes across all sources?`
+$ARGUMENTS is the question, for example:
+- `What does Mira know by chapter 12?`
+- `List timeline conflicts in arc two`
 
-Follow the Query Workflow defined in CLAUDE.md:
-1. Read wiki/index.md to identify the most relevant pages
-2. Read those pages (up to ~10 most relevant)
-3. Synthesize a thorough markdown answer with [[PageName]] wikilink citations
-4. Include a ## Sources section at the end listing pages you drew from
-5. Ask the user if they want the answer saved as wiki/syntheses/<slug>.md
-
-If the wiki is empty, say so and suggest running /wiki-ingest first.
+Workflow:
+1. Read `wiki/index.md` and identify relevant pages
+2. Prefer scoped retrieval across `chapters`, `arcs`, `timeline`, `characters`
+3. Answer in markdown with `[[PageName]]` citations
+4. Include `## Sources`
+5. Ask whether to save as `wiki/syntheses/<slug>.md`

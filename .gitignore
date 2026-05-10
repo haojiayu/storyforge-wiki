@@ -1,11 +1,16 @@
 # Generated wiki/content artifacts
-raw/*
-wiki/*
-graph/*
+raw/**
+wiki/**
+graph/**
 
 # Keep directory placeholders only
+!raw/**/
 !raw/.gitkeep
+!raw/**/.gitkeep
+!wiki/**/
 !wiki/.gitkeep
+!wiki/**/.gitkeep
+!graph/**/
 !graph/.gitkeep
 
 # Python and local tooling artifacts

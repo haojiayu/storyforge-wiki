@@ -29,6 +29,10 @@ Primary page types:
 Canonical folders under `wiki/`:
 - `sources`, `characters`, `locations`, `factions`, `cultures`, `artifacts`, `systems`, `events`, `timeline`, `arcs`, `chapters`, `syntheses`
 
+Section templates are defined in:
+- `templates/wiki-section-templates.md`
+- Always follow these heading structures when creating/updating pages.
+
 ## Frontmatter Contract
 
 ```yaml
@@ -59,6 +63,7 @@ last_updated: YYYY-MM-DD
    - unresolved threads
    - canon conflicts
 4. Update or create domain pages across the fiction folders
+   - Domain pages must follow the corresponding section template headings.
 5. Update `wiki/index.md`
 6. Update `wiki/overview.md`
 7. Append `wiki/log.md` with `## [YYYY-MM-DD] ingest | <title>`

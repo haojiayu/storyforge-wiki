@@ -16,6 +16,7 @@ INDEX_FILE = WIKI_DIR / "index.md"
 OVERVIEW_FILE = WIKI_DIR / "overview.md"
 LOG_FILE = WIKI_DIR / "log.md"
 SCHEMA_FILE = REPO_ROOT / "CLAUDE.md"
+TEMPLATES_FILE = REPO_ROOT / "templates" / "wiki-section-templates.md"
 
 DOMAIN_DIRS = [
     "sources", "characters", "locations", "factions", "cultures", "artifacts",
@@ -198,6 +199,7 @@ def ingest(source_path: str, auto_convert: bool = True) -> None:
 
     source_content = source.read_text(encoding="utf-8")
     schema = read_file(SCHEMA_FILE)
+    templates = read_file(TEMPLATES_FILE)
     index_content = read_file(INDEX_FILE)
     overview_content = read_file(OVERVIEW_FILE)
     today = date.today().isoformat()
@@ -207,6 +209,9 @@ def ingest(source_path: str, auto_convert: bool = True) -> None:
     prompt = f"""You are maintaining a novel/worldbuilding wiki.
 Schema:
 {schema}
+
+Section templates (must follow when writing pages):
+{templates}
 
 Current index:
 {index_content}
@@ -239,8 +244,8 @@ Return only valid JSON:
     "Chapters": []
   }},
   "domain_pages": [
-    {{"path": "characters/CharacterName.md", "content": "full markdown"}},
-    {{"path": "timeline/Era-EventName.md", "content": "full markdown"}}
+    {{"path": "characters/CharacterName.md", "content": "full markdown following Character template"}},
+    {{"path": "timeline/Era-EventName.md", "content": "full markdown following Timeline template"}}
   ],
   "contradictions": ["..."],
   "log_entry": "## [{today}] ingest | <title>\\n\\nAdded canon updates and narrative deltas."

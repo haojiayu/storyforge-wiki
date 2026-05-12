@@ -52,6 +52,13 @@ last_updated: YYYY-MM-DD
 ---
 ```
 
+## Section Templates
+
+Use and preserve the standardized section structures in:
+- `templates/wiki-section-templates.md`
+
+Every generated `character`, `arc`, `location`, `faction`, `system`, `event`, `timeline`, and `source` page must follow its template headings.
+
 ## Ingest Workflow
 
 1. Read source file and current wiki context (`wiki/index.md`, `wiki/overview.md`)

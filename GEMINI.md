@@ -37,6 +37,10 @@ last_updated: YYYY-MM-DD
 ---
 ```
 
+## Section Templates
+
+Use `templates/wiki-section-templates.md` as the required structure guide when generating or updating wiki pages.
+
 ## Workflow Summary
 
 - Ingest creates source/chapter records and updates domain canon pages.

@@ -34,6 +34,9 @@ CONVERTIBLE_EXTENSIONS = {
 }
 ALL_SUPPORTED_EXTENSIONS = {".md"} | CONVERTIBLE_EXTENSIONS
 MAX_SOURCE_CHARS = 120_000
+CHUNK_SIZE_CHARS = 45_000
+CHUNK_OVERLAP_CHARS = 4_000
+CHUNKING_THRESHOLD_CHARS = 90_000
 MIN_RESPONSE_KEYS = {"title", "slug", "source_page", "index_entries", "domain_pages", "log_entry"}
 
 
@@ -91,6 +94,42 @@ def _ensure_list_of_str(value: Any) -> list[str]:
     if isinstance(value, list):
         return [str(v).strip() for v in value if str(v).strip()]
     return []
+
+
+def _stable_key(value: Any) -> str:
+    if isinstance(value, dict):
+        return json.dumps(value, sort_keys=True, ensure_ascii=True)
+    return str(value)
+
+
+def _dedupe_list(values: list[Any]) -> list[Any]:
+    deduped: list[Any] = []
+    seen = set()
+    for value in values:
+        key = _stable_key(value)
+        if key not in seen:
+            deduped.append(value)
+            seen.add(key)
+    return deduped
+
+
+def split_text_into_chunks(content: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CHUNK_OVERLAP_CHARS) -> list[str]:
+    if len(content) <= chunk_size:
+        return [content]
+    if overlap >= chunk_size:
+        overlap = max(0, chunk_size // 10)
+    chunks: list[str] = []
+    start = 0
+    content_len = len(content)
+    while start < content_len:
+        end = min(content_len, start + chunk_size)
+        chunk = content[start:end]
+        if chunk.strip():
+            chunks.append(chunk)
+        if end == content_len:
+            break
+        start = max(0, end - overlap)
+    return chunks
 
 
 def normalize_frontmatter(content: str, page_type: str, today: str, fallback_title: str, source_slug: str) -> str:
@@ -203,8 +242,15 @@ def call_llm_with_repair(prompt: str, max_tokens: int = 8192, retries: int = 2) 
         raise ValueError(f"Could not parse valid JSON from LLM response: {last_error}")
 
 
-def extract_ingest_facts(schema: str, templates: str, rel_source: str, source_for_prompt: str) -> dict:
+def extract_ingest_facts(
+    schema: str,
+    templates: str,
+    rel_source: str,
+    source_for_prompt: str,
+    chunk_info: str | None = None,
+) -> dict:
     """Stage 1: Extract structured facts from source text."""
+    chunk_prefix = f"Chunk context: {chunk_info}\n\n" if chunk_info else ""
     prompt = f"""You are a fiction wiki extraction engine.
 Extract facts only. Do not author final pages yet.
 
@@ -214,7 +260,7 @@ Schema:
 Templates:
 {templates}
 
-Source file: {rel_source}
+{chunk_prefix}Source file: {rel_source}
 === SOURCE START ===
 {source_for_prompt}
 === SOURCE END ===
@@ -246,6 +292,86 @@ Return valid JSON only:
 }}
 """
     return call_llm_with_repair(prompt, max_tokens=8192)
+
+
+def merge_extracted_facts(parts: list[dict]) -> dict:
+    if not parts:
+        return {
+            "source_title_guess": "",
+            "story_scope": "",
+            "entities": [],
+            "timeline_events": [],
+            "character_state_changes": [],
+            "world_facts": [],
+            "unresolved_threads": [],
+            "contradictions": [],
+        }
+
+    source_title_guess = ""
+    scopes: list[str] = []
+    entities: list[Any] = []
+    timeline_events: list[Any] = []
+    character_state_changes: list[Any] = []
+    world_facts: list[Any] = []
+    unresolved_threads: list[Any] = []
+    contradictions: list[Any] = []
+
+    for part in parts:
+        if not source_title_guess:
+            source_title_guess = str(part.get("source_title_guess", "")).strip()
+        scope = str(part.get("story_scope", "")).strip()
+        if scope:
+            scopes.append(scope)
+        if isinstance(part.get("entities"), list):
+            entities.extend(part["entities"])
+        if isinstance(part.get("timeline_events"), list):
+            timeline_events.extend(part["timeline_events"])
+        if isinstance(part.get("character_state_changes"), list):
+            character_state_changes.extend(part["character_state_changes"])
+        if isinstance(part.get("world_facts"), list):
+            world_facts.extend(part["world_facts"])
+        if isinstance(part.get("unresolved_threads"), list):
+            unresolved_threads.extend(part["unresolved_threads"])
+        if isinstance(part.get("contradictions"), list):
+            contradictions.extend(part["contradictions"])
+
+    return {
+        "source_title_guess": source_title_guess,
+        "story_scope": " ".join(scopes[:3]).strip(),
+        "entities": _dedupe_list(entities),
+        "timeline_events": _dedupe_list(timeline_events),
+        "character_state_changes": _dedupe_list(character_state_changes),
+        "world_facts": _dedupe_list(world_facts),
+        "unresolved_threads": _dedupe_list(unresolved_threads),
+        "contradictions": _dedupe_list(contradictions),
+    }
+
+
+def extract_ingest_facts_mapreduce(schema: str, templates: str, rel_source: str, source_content: str) -> dict:
+    if len(source_content) < CHUNKING_THRESHOLD_CHARS:
+        return extract_ingest_facts(schema, templates, rel_source, source_content)
+
+    chunks = split_text_into_chunks(source_content)
+    print(f"  chunking large source: {len(source_content)} chars into {len(chunks)} chunks")
+    chunk_results: list[dict] = []
+    for idx, chunk in enumerate(chunks, start=1):
+        chunk_info = f"{idx}/{len(chunks)} (chars={len(chunk)})"
+        print(f"  extracting chunk {chunk_info}")
+        chunk_result = extract_ingest_facts(
+            schema=schema,
+            templates=templates,
+            rel_source=rel_source,
+            source_for_prompt=chunk,
+            chunk_info=chunk_info,
+        )
+        chunk_results.append(chunk_result)
+    merged = merge_extracted_facts(chunk_results)
+    print(
+        "  merged extracted facts: "
+        f"{len(merged.get('entities', []))} entities, "
+        f"{len(merged.get('timeline_events', []))} timeline events"
+    )
+    return merged
 
 
 def synthesize_ingest_pages(
@@ -458,7 +584,7 @@ def ingest(source_path: str, auto_convert: bool = True) -> None:
         source = convert_to_md(source)
 
     source_content = source.read_text(encoding="utf-8")
-    source_for_prompt, was_truncated = truncate_for_prompt(source_content)
+    _, was_truncated = truncate_for_prompt(source_content)
     schema = read_file(SCHEMA_FILE)
     templates = read_file(TEMPLATES_FILE)
     index_content = read_file(INDEX_FILE)
@@ -468,7 +594,7 @@ def ingest(source_path: str, auto_convert: bool = True) -> None:
     rel_source = source.relative_to(REPO_ROOT) if source.is_relative_to(REPO_ROOT) else source.name
 
     try:
-        extracted = extract_ingest_facts(schema, templates, str(rel_source), source_for_prompt)
+        extracted = extract_ingest_facts_mapreduce(schema, templates, str(rel_source), source_content)
         raw_data = synthesize_ingest_pages(
             schema=schema,
             templates=templates,

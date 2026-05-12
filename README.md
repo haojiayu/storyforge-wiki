@@ -151,6 +151,28 @@ See:
 - Treat `wiki/overview.md` as your current canon lens
 - Commit only tooling/docs; keep raw and generated content local unless intentional
 
+## Large File Ingestion (Same Usage)
+
+You still run ingestion exactly the same way:
+
+- `/wiki-ingest raw/`
+- `ingest raw/`
+
+Internally, large files now use a chunked map-reduce extraction path:
+
+1. Split large sources into overlapping chunks
+2. Extract structured facts per chunk
+3. Merge and deduplicate entities/events/facts
+4. Synthesize final wiki pages from the merged fact set
+
+This improves coverage for long manuscript files while preserving the same Claude Code workflow.
+
+### Inspiration References
+
+- Dean, Jeffrey & Ghemawat, Sanjay. *MapReduce: Simplified Data Processing on Large Clusters* (OSDI 2004): [https://research.google/pubs/mapreduce-simplified-data-processing-on-large-clusters/](https://research.google/pubs/mapreduce-simplified-data-processing-on-large-clusters/)
+- Lewis, Patrick et al. *Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks* (NeurIPS 2020): [https://arxiv.org/abs/2005.11401](https://arxiv.org/abs/2005.11401)
+- LangChain docs (map-reduce summarization/chunking pattern): [https://python.langchain.com/docs/how_to/summarize_map_reduce/](https://python.langchain.com/docs/how_to/summarize_map_reduce/)
+
 ## Troubleshooting
 
 - Unknown slash command: restart `claude` in repo root and verify `.claude/commands/`

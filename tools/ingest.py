@@ -9,6 +9,7 @@ import re
 import sys
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 REPO_ROOT = Path(__file__).parent.parent
 WIKI_DIR = REPO_ROOT / "wiki"
@@ -32,6 +33,8 @@ CONVERTIBLE_EXTENSIONS = {
     ".yaml", ".yml", ".tsv", ".wav", ".mp3",
 }
 ALL_SUPPORTED_EXTENSIONS = {".md"} | CONVERTIBLE_EXTENSIONS
+MAX_SOURCE_CHARS = 120_000
+MIN_RESPONSE_KEYS = {"title", "slug", "source_page", "index_entries", "domain_pages", "log_entry"}
 
 
 def read_file(path: Path) -> str:
@@ -52,6 +55,7 @@ def call_llm(prompt: str, max_tokens: int = 8192) -> str:
         model=model,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=max_tokens,
+        temperature=0,
     )
     return response.choices[0].message.content
 
@@ -63,6 +67,245 @@ def parse_json(text: str) -> dict:
     if not match:
         raise ValueError("No JSON found in response")
     return json.loads(match.group(0))
+
+
+def slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "untitled-source"
+
+
+def truncate_for_prompt(content: str, max_chars: int = MAX_SOURCE_CHARS) -> tuple[str, bool]:
+    if len(content) <= max_chars:
+        return content, False
+    keep_head = max_chars // 2
+    keep_tail = max_chars - keep_head
+    trimmed = (
+        content[:keep_head]
+        + "\n\n[... CONTENT TRUNCATED FOR INGEST PROMPT ...]\n\n"
+        + content[-keep_tail:]
+    )
+    return trimmed, True
+
+
+def _ensure_list_of_str(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if str(v).strip()]
+    return []
+
+
+def normalize_frontmatter(content: str, page_type: str, today: str, fallback_title: str, source_slug: str) -> str:
+    if content.startswith("---\n"):
+        fm_end = content.find("\n---", 4)
+        if fm_end != -1:
+            fm = content[: fm_end + 4]
+            body = content[fm_end + 4 :].lstrip("\n")
+            if not re.search(r'^last_updated:\s*', fm, re.MULTILINE):
+                fm = fm.rstrip("\n") + f"\nlast_updated: {today}\n---"
+            return fm + "\n\n" + body
+
+    return (
+        "---\n"
+        f"title: \"{fallback_title}\"\n"
+        f"type: {page_type}\n"
+        "tags: []\n"
+        f"sources: [\"{source_slug}\"]\n"
+        "canon_status: draft\n"
+        "spoiler_level: medium\n"
+        "era: \"\"\n"
+        "aliases: []\n"
+        "relationships: []\n"
+        "first_appearance: \"\"\n"
+        f"last_updated: {today}\n"
+        "---\n\n"
+        + content.strip()
+        + "\n"
+    )
+
+
+def normalize_ingest_payload(data: dict, source: Path, today: str) -> dict:
+    missing = [k for k in MIN_RESPONSE_KEYS if k not in data]
+    if missing:
+        raise ValueError(f"Missing required keys in ingest response: {', '.join(missing)}")
+
+    title = str(data.get("title", "")).strip() or source.stem.replace("-", " ").title()
+    slug = slugify(str(data.get("slug", "")).strip() or title or source.stem)
+    source_page = str(data.get("source_page", "")).strip()
+    if not source_page:
+        raise ValueError("source_page is empty")
+    source_page = normalize_frontmatter(source_page, "source", today, title, slug)
+
+    index_entries_raw = data.get("index_entries", {})
+    if not isinstance(index_entries_raw, dict):
+        index_entries_raw = {}
+    index_entries: dict[str, list[str]] = {}
+    for section in INDEX_SECTIONS:
+        deduped: list[str] = []
+        seen = set()
+        for line in _ensure_list_of_str(index_entries_raw.get(section, [])):
+            if line not in seen:
+                deduped.append(line)
+                seen.add(line)
+        index_entries[section] = deduped
+    if not index_entries["Sources"]:
+        index_entries["Sources"].append(f"- [{title}](sources/{slug}.md) — ingested")
+
+    domain_pages_raw = data.get("domain_pages", [])
+    domain_pages: list[dict[str, str]] = []
+    if isinstance(domain_pages_raw, list):
+        for item in domain_pages_raw:
+            if not isinstance(item, dict):
+                continue
+            rel_path = str(item.get("path", "")).strip().replace("\\", "/")
+            content = str(item.get("content", "")).strip()
+            if not rel_path or not content:
+                continue
+            folder = rel_path.split("/", 1)[0]
+            if folder not in DOMAIN_DIRS:
+                continue
+            page_title = Path(rel_path).stem.replace("-", " ").title()
+            page_type = folder[:-1] if folder.endswith("s") else folder
+            normalized = normalize_frontmatter(content, page_type, today, page_title, slug)
+            domain_pages.append({"path": rel_path, "content": normalized})
+
+    log_entry = str(data.get("log_entry", "")).strip()
+    if not log_entry:
+        log_entry = f"## [{today}] ingest | {title}\n\nAdded canon updates and narrative deltas."
+
+    return {
+        "title": title,
+        "slug": slug,
+        "source_page": source_page,
+        "overview_update": data.get("overview_update"),
+        "index_entries": index_entries,
+        "domain_pages": domain_pages,
+        "contradictions": _ensure_list_of_str(data.get("contradictions", [])),
+        "log_entry": log_entry,
+    }
+
+
+def call_llm_with_repair(prompt: str, max_tokens: int = 8192, retries: int = 2) -> dict:
+    raw = call_llm(prompt, max_tokens=max_tokens)
+    try:
+        return parse_json(raw)
+    except Exception:
+        last_error = None
+        last_raw = raw
+        for _ in range(retries):
+            repair_prompt = (
+                "Fix the following output so it is valid JSON only and matches the requested schema exactly.\n\n"
+                f"OUTPUT:\n{last_raw}\n"
+            )
+            try:
+                last_raw = call_llm(repair_prompt, max_tokens=max_tokens)
+                return parse_json(last_raw)
+            except Exception as err:
+                last_error = err
+        raise ValueError(f"Could not parse valid JSON from LLM response: {last_error}")
+
+
+def extract_ingest_facts(schema: str, templates: str, rel_source: str, source_for_prompt: str) -> dict:
+    """Stage 1: Extract structured facts from source text."""
+    prompt = f"""You are a fiction wiki extraction engine.
+Extract facts only. Do not author final pages yet.
+
+Schema:
+{schema}
+
+Templates:
+{templates}
+
+Source file: {rel_source}
+=== SOURCE START ===
+{source_for_prompt}
+=== SOURCE END ===
+
+Return valid JSON only:
+{{
+  "source_title_guess": "string",
+  "story_scope": "one short paragraph",
+  "entities": [
+    {{
+      "name": "string",
+      "type": "character|location|faction|culture|artifact|system|event|arc|chapter|timeline",
+      "aliases": [],
+      "facts": [],
+      "relationships": [
+        {{"target": "Name", "type": "ALLY_OF|CONFLICTS_WITH|LOCATED_IN|CAUSES|LEARNS|BETRAYS|OWNS|MEMBER_OF", "evidence": "quote or summary"}}
+      ]
+    }}
+  ],
+  "timeline_events": [
+    {{"label": "string", "date_or_era": "string", "summary": "string"}}
+  ],
+  "character_state_changes": [
+    {{"character": "string", "from": "string", "to": "string", "evidence": "string"}}
+  ],
+  "world_facts": [],
+  "unresolved_threads": [],
+  "contradictions": []
+}}
+"""
+    return call_llm_with_repair(prompt, max_tokens=8192)
+
+
+def synthesize_ingest_pages(
+    schema: str,
+    templates: str,
+    index_content: str,
+    overview_content: str,
+    rel_source: str,
+    extracted_facts: dict,
+    today: str,
+) -> dict:
+    """Stage 2: Build final wiki pages from extracted facts."""
+    prompt = f"""You are maintaining a novel/worldbuilding wiki.
+Use the extracted facts as your primary grounding.
+
+Schema:
+{schema}
+
+Section templates (must follow when writing pages):
+{templates}
+
+Current index:
+{index_content}
+
+Current overview:
+{overview_content}
+
+Source file: {rel_source}
+
+Extracted facts JSON:
+{json.dumps(extracted_facts, ensure_ascii=True)}
+
+Return only valid JSON:
+{{
+  "title": "Source title",
+  "slug": "kebab-case-source-slug",
+  "source_page": "full markdown page for wiki/sources/<slug>.md",
+  "overview_update": "full markdown for wiki/overview.md or null",
+  "index_entries": {{
+    "Sources": ["- [Title](sources/slug.md) — one line"],
+    "Characters": [],
+    "Locations": [],
+    "Factions": [],
+    "Cultures": [],
+    "Artifacts": [],
+    "Systems": [],
+    "Events": [],
+    "Timeline": [],
+    "Arcs": [],
+    "Chapters": []
+  }},
+  "domain_pages": [
+    {{"path": "characters/CharacterName.md", "content": "full markdown following Character template"}},
+    {{"path": "timeline/Era-EventName.md", "content": "full markdown following Timeline template"}}
+  ],
+  "contradictions": ["..."],
+  "log_entry": "## [{today}] ingest | <title>\\n\\nAdded canon updates and narrative deltas."
+}}
+"""
+    return call_llm_with_repair(prompt, max_tokens=8192)
 
 
 def local_fallback_ingest(source: Path, source_content: str, today: str) -> dict:
@@ -139,8 +382,25 @@ def update_index(entries: dict[str, list[str]]) -> None:
         header = f"## {section}"
         if header not in content:
             content += f"\n{header}\n"
-        insertion = "".join(f"{line}\n" for line in items if line.strip())
-        content = content.replace(header + "\n", header + "\n" + insertion)
+        section_match = re.search(rf"(## {re.escape(section)}\n)([\s\S]*?)(?=\n## |\Z)", content)
+        existing_items: list[str] = []
+        if section_match:
+            existing_items = [
+                line.strip()
+                for line in section_match.group(2).splitlines()
+                if line.strip().startswith("- ")
+            ]
+        merged = []
+        seen = set()
+        for line in existing_items + [line.strip() for line in items if line.strip()]:
+            if line not in seen:
+                merged.append(line)
+                seen.add(line)
+        replacement = header + "\n" + ("\n".join(merged) + "\n" if merged else "")
+        if section_match:
+            content = content[: section_match.start()] + replacement + content[section_match.end() :]
+        else:
+            content = content.rstrip() + "\n\n" + replacement
     write_file(INDEX_FILE, content)
 
 
@@ -198,6 +458,7 @@ def ingest(source_path: str, auto_convert: bool = True) -> None:
         source = convert_to_md(source)
 
     source_content = source.read_text(encoding="utf-8")
+    source_for_prompt, was_truncated = truncate_for_prompt(source_content)
     schema = read_file(SCHEMA_FILE)
     templates = read_file(TEMPLATES_FILE)
     index_content = read_file(INDEX_FILE)
@@ -206,58 +467,23 @@ def ingest(source_path: str, auto_convert: bool = True) -> None:
 
     rel_source = source.relative_to(REPO_ROOT) if source.is_relative_to(REPO_ROOT) else source.name
 
-    prompt = f"""You are maintaining a novel/worldbuilding wiki.
-Schema:
-{schema}
-
-Section templates (must follow when writing pages):
-{templates}
-
-Current index:
-{index_content}
-
-Current overview:
-{overview_content}
-
-New source file: {rel_source}
-=== SOURCE START ===
-{source_content}
-=== SOURCE END ===
-
-Return only valid JSON:
-{{
-  "title": "Source title",
-  "slug": "kebab-case-source-slug",
-  "source_page": "full markdown page for wiki/sources/<slug>.md",
-  "overview_update": "full markdown for wiki/overview.md or null",
-  "index_entries": {{
-    "Sources": ["- [Title](sources/slug.md) — one line"],
-    "Characters": [],
-    "Locations": [],
-    "Factions": [],
-    "Cultures": [],
-    "Artifacts": [],
-    "Systems": [],
-    "Events": [],
-    "Timeline": [],
-    "Arcs": [],
-    "Chapters": []
-  }},
-  "domain_pages": [
-    {{"path": "characters/CharacterName.md", "content": "full markdown following Character template"}},
-    {{"path": "timeline/Era-EventName.md", "content": "full markdown following Timeline template"}}
-  ],
-  "contradictions": ["..."],
-  "log_entry": "## [{today}] ingest | <title>\\n\\nAdded canon updates and narrative deltas."
-}}
-"""
-
     try:
-        raw = call_llm(prompt)
-        data = parse_json(raw)
+        extracted = extract_ingest_facts(schema, templates, str(rel_source), source_for_prompt)
+        raw_data = synthesize_ingest_pages(
+            schema=schema,
+            templates=templates,
+            index_content=index_content,
+            overview_content=overview_content,
+            rel_source=str(rel_source),
+            extracted_facts=extracted,
+            today=today,
+        )
+        data = normalize_ingest_payload(raw_data, source=source, today=today)
     except Exception:
         print("  warning: LLM call failed, using deterministic fallback ingest")
         data = local_fallback_ingest(source, source_content, today)
+    if was_truncated:
+        print(f"  note: source prompt truncated to {MAX_SOURCE_CHARS} chars for stable ingestion")
 
     changed = []
     slug = data["slug"]

@@ -1,15 +1,15 @@
-Ingest a manuscript, chapter, or lore source into the Novel World Wiki.
+将小说手稿、章节或设定资料摄取进 Novel World Wiki。所有输出使用简体中文。
 
-Usage: /wiki-ingest $ARGUMENTS
+用法：/wiki-ingest $ARGUMENTS
 
-$ARGUMENTS should be a file path such as:
+$ARGUMENTS 应为文件路径，例如：
 - `raw/novel/chapter-01.md`
 - `raw/world/lore-notes.md`
 
-Workflow:
-1. Read source + `wiki/index.md` + `wiki/overview.md`
-2. Write `wiki/sources/<slug>.md` with narrative beats and canon deltas
-3. Update relevant domain pages (`characters`, `locations`, `factions`, `systems`, `events`, `timeline`, `arcs`, `chapters`)
-4. Update `wiki/index.md` and `wiki/overview.md`
-5. Append `wiki/log.md` entry for ingest
-6. Report canon conflicts, if any
+工作流：
+1. 阅读源文件 + `wiki/index.md` + `wiki/overview.md`
+2. 写入 `wiki/sources/<slug>.md`，包含叙事要点和设定变化
+3. 更新相关领域页面（`characters`、`locations`、`factions`、`systems`、`events`、`timeline`、`arcs`、`chapters`）
+4. 更新 `wiki/index.md` 和 `wiki/overview.md`
+5. 在 `wiki/log.md` 追加摄取记录
+6. 若存在设定冲突，予以报告

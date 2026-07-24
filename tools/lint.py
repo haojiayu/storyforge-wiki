@@ -105,10 +105,10 @@ def call_llm(prompt: str) -> str:
         from litellm import completion
     except ImportError:
         return (
-            "## Timeline Contradictions\n- Semantic pass skipped (`litellm` not installed).\n\n"
-            "## Character Continuity\n- Semantic pass skipped.\n\n"
-            "## Setup and Payoff Gaps\n- Semantic pass skipped.\n\n"
-            "## Retcon Risk\n- Semantic pass skipped."
+            "## 时间线矛盾\n- 语义检查已跳过（`litellm` 未安装）。\n\n"
+            "## 角色连续性\n- 语义检查已跳过。\n\n"
+            "## 铺垫与呼应缺口\n- 语义检查已跳过。\n\n"
+            "## 改写风险\n- 语义检查已跳过。"
         )
 
     model = os.getenv("LLM_MODEL", "anthropic/claude-3-5-sonnet-latest")
@@ -121,10 +121,10 @@ def call_llm(prompt: str) -> str:
         return response.choices[0].message.content
     except Exception:
         return (
-            "## Timeline Contradictions\n- Semantic pass skipped (LLM provider not configured).\n\n"
-            "## Character Continuity\n- Semantic pass skipped.\n\n"
-            "## Setup and Payoff Gaps\n- Semantic pass skipped.\n\n"
-            "## Retcon Risk\n- Semantic pass skipped."
+            "## 时间线矛盾\n- 语义检查已跳过（LLM 提供商未配置）。\n\n"
+            "## 角色连续性\n- 语义检查已跳过。\n\n"
+            "## 铺垫与呼应缺口\n- 语义检查已跳过。\n\n"
+            "## 改写风险\n- 语义检查已跳过。"
         )
 
 
@@ -133,17 +133,17 @@ def semantic_continuity_pass(pages: list[Path]) -> str:
     context = ""
     for p in sample:
         context += f"\n\n### {p.relative_to(REPO_ROOT)}\n{read_file(p)[:1600]}"
-    prompt = f"""You are linting a novel canon wiki. Identify:
-1) timeline contradictions
-2) character continuity breaks
-3) setup/payoff mismatches
-4) retcon risk areas
-Keep output concise markdown with sections:
-## Timeline Contradictions
-## Character Continuity
-## Setup and Payoff Gaps
-## Retcon Risk
-Context:
+    prompt = f"""你正在对小说正典 Wiki 执行连续性检查。所有输出使用简体中文。请识别：
+1) 时间线矛盾
+2) 角色连续性断裂
+3) 铺垫与呼应不匹配
+4) 改写风险区域
+输出简洁 Markdown，包含以下章节：
+## 时间线矛盾
+## 角色连续性
+## 铺垫与呼应缺口
+## 改写风险
+上下文：
 {context}
 """
     return call_llm(prompt)
@@ -157,7 +157,7 @@ def append_log(entry: str) -> None:
 def run_lint() -> str:
     pages = all_pages()
     if not pages:
-        return "Wiki is empty."
+        return "Wiki 为空。"
 
     orphans = find_orphans(pages)
     broken = find_broken_links(pages)
@@ -168,29 +168,29 @@ def run_lint() -> str:
     semantic = semantic_continuity_pass(pages)
 
     lines = [
-        f"# Novel Wiki Lint Report — {date.today().isoformat()}",
+        f"# 世界观 Wiki 连续性报告 — {date.today().isoformat()}",
         "",
-        "## Structural",
-        f"- Orphans: {len(orphans)}",
-        f"- Broken links: {len(broken)}",
-        f"- Sparse pages: {len(sparse)}",
+        "## 结构",
+        f"- 孤立页面：{len(orphans)}",
+        f"- 断裂链接：{len(broken)}",
+        f"- 稀疏页面：{len(sparse)}",
         "",
     ]
     if broken:
-        lines.append("### Broken Links")
+        lines.append("### 断裂链接")
         lines.extend(f"- `{p.relative_to(REPO_ROOT)}` -> `[[{link}]]`" for p, link in broken[:40])
         lines.append("")
     if alias_collisions:
-        lines.append("### Alias Collisions")
+        lines.append("### 别名冲突")
         for alias, refs in alias_collisions.items():
-            lines.append(f"- `{alias}` appears in: {', '.join(refs)}")
+            lines.append(f"- `{alias}` 出现于：{', '.join(refs)}")
         lines.append("")
     if contested:
-        lines.append("### Contested Canon Without Rationale")
+        lines.append("### 未说明原因的争议正典")
         lines.extend(f"- `{p.relative_to(REPO_ROOT)}`" for p in contested)
         lines.append("")
     if unresolved:
-        lines.append("### Unresolved Threads Missing Wikilinks")
+        lines.append("### 缺少 Wikilink 的未解决悬念")
         lines.extend(f"- `{p.relative_to(REPO_ROOT)}`" for p in unresolved)
         lines.append("")
     lines.append("---")
@@ -202,7 +202,7 @@ def run_lint() -> str:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Lint Novel World Wiki")
+    parser = argparse.ArgumentParser(description="对小说世界观 Wiki 执行连续性检查")
     parser.add_argument("--save", action="store_true")
     args = parser.parse_args()
 
@@ -211,5 +211,5 @@ if __name__ == "__main__":
     if args.save:
         out = WIKI_DIR / "lint-report.md"
         out.write_text(report, encoding="utf-8")
-        print(f"\nSaved: {out.relative_to(REPO_ROOT)}")
-    append_log(f"## [{date.today().isoformat()}] lint | Continuity lint\n\nRan fiction continuity lint.")
+        print(f"\n已保存：{out.relative_to(REPO_ROOT)}")
+    append_log(f"## [{date.today().isoformat()}] lint | 连续性检查\n\n已运行小说连续性检查。")

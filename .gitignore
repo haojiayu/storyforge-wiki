@@ -13,6 +13,9 @@ graph/**
 !graph/**/
 !graph/.gitkeep
 
+# Local migration recovery copies (including copied .gitkeep files)
+raw/_migration-backups/
+
 # Python and local tooling artifacts
 __pycache__/
 *.pyc

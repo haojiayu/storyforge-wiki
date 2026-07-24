@@ -39,7 +39,7 @@ def write_file(path: Path, content: str):
     """Write UTF-8 content to file, creating parent directories as needed."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
-    print(f"  wrote: {path.relative_to(REPO_ROOT)}")
+    print(f"  已写入：{path.relative_to(REPO_ROOT)}")
 
 
 # ── LLM ────────────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ def call_llm(
     try:
         from litellm import completion
     except ImportError:
-        print("Error: litellm not installed. Run: pip install litellm")
+        print("错误：litellm 未安装，请运行：pip install litellm")
         sys.exit(1)
 
     model = os.getenv(model_env, default_model)
@@ -121,10 +121,8 @@ def append_log(entry: str):
 
     if not LOG_FILE.exists():
         LOG_FILE.write_text(
-            "# Wiki Log\n\n"
-            "> Records important additions, revisions, and clarifications in the "
-            "project knowledge layer. Maintained in append-only mode for agent and "
-            "human traceability.\n\n"
+            "# Wiki 日志\n\n"
+            "> 记录知识层的重要新增、修订与说明，以追加模式维护，供 Agent 和人工追溯。\n\n"
             f"{entry_text}\n",
             encoding="utf-8",
         )
@@ -133,9 +131,7 @@ def append_log(entry: str):
     existing = read_file(LOG_FILE).rstrip()
     if not existing:
         existing = (
-            "# Wiki Log\n\n"
-            "> Records important additions, revisions, and clarifications in the "
-            "project knowledge layer. Maintained in append-only mode for agent and "
-            "human traceability."
+            "# Wiki 日志\n\n"
+            "> 记录知识层的重要新增、修订与说明，以追加模式维护，供 Agent 和人工追溯。"
         )
     LOG_FILE.write_text(existing + "\n\n" + entry_text + "\n", encoding="utf-8")

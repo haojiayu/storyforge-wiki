@@ -27,6 +27,20 @@ INDEX_SECTIONS = [
     "Sources", "Characters", "Locations", "Factions", "Cultures",
     "Artifacts", "Systems", "Events", "Timeline", "Arcs", "Chapters", "Syntheses",
 ]
+INDEX_SECTION_LABELS: dict[str, str] = {
+    "Sources": "来源",
+    "Characters": "人物",
+    "Locations": "地点",
+    "Factions": "组织",
+    "Cultures": "文化",
+    "Artifacts": "器物",
+    "Systems": "体系",
+    "Events": "事件",
+    "Timeline": "时间线",
+    "Arcs": "故事弧",
+    "Chapters": "章节",
+    "Syntheses": "合成",
+}
 CONVERTIBLE_EXTENSIONS = {
     ".pdf", ".docx", ".pptx", ".xlsx", ".xls", ".html", ".htm", ".txt",
     ".csv", ".json", ".xml", ".rst", ".rtf", ".epub", ".ipynb",
@@ -186,7 +200,7 @@ def normalize_ingest_payload(data: dict, source: Path, today: str) -> dict:
                 seen.add(line)
         index_entries[section] = deduped
     if not index_entries["Sources"]:
-        index_entries["Sources"].append(f"- [{title}](sources/{slug}.md) — ingested")
+        index_entries["Sources"].append(f"- [{title}](sources/{slug}.md) — 已摄取")
 
     domain_pages_raw = data.get("domain_pages", [])
     domain_pages: list[dict[str, str]] = []
@@ -208,7 +222,7 @@ def normalize_ingest_payload(data: dict, source: Path, today: str) -> dict:
 
     log_entry = str(data.get("log_entry", "")).strip()
     if not log_entry:
-        log_entry = f"## [{today}] ingest | {title}\n\nAdded canon updates and narrative deltas."
+        log_entry = f"## [{today}] ingest | {title}\n\n已补充正典更新与叙事变化。"
 
     return {
         "title": title,
@@ -250,22 +264,23 @@ def extract_ingest_facts(
     chunk_info: str | None = None,
 ) -> dict:
     """Stage 1: Extract structured facts from source text."""
-    chunk_prefix = f"Chunk context: {chunk_info}\n\n" if chunk_info else ""
-    prompt = f"""You are a fiction wiki extraction engine.
-Extract facts only. Do not author final pages yet.
+    chunk_prefix = f"片段上下文：{chunk_info}\n\n" if chunk_info else ""
+    prompt = f"""你是小说 Wiki 事实提取引擎。
+仅提取事实，不要生成最终页面。
+所有人类可读内容使用简体中文，JSON 键保持英文。
 
-Schema:
+架构规则：
 {schema}
 
-Templates:
+页面模板：
 {templates}
 
-{chunk_prefix}Source file: {rel_source}
-=== SOURCE START ===
+{chunk_prefix}来源文件：{rel_source}
+=== 来源开始 ===
 {source_for_prompt}
-=== SOURCE END ===
+=== 来源结束 ===
 
-Return valid JSON only:
+仅返回合法 JSON：
 {{
   "source_title_guess": "string",
   "story_scope": "one short paragraph",
@@ -352,11 +367,11 @@ def extract_ingest_facts_mapreduce(schema: str, templates: str, rel_source: str,
         return extract_ingest_facts(schema, templates, rel_source, source_content)
 
     chunks = split_text_into_chunks(source_content)
-    print(f"  chunking large source: {len(source_content)} chars into {len(chunks)} chunks")
+    print(f"  正在分块处理大型来源：{len(source_content)} 字符，共 {len(chunks)} 个片段")
     chunk_results: list[dict] = []
     for idx, chunk in enumerate(chunks, start=1):
         chunk_info = f"{idx}/{len(chunks)} (chars={len(chunk)})"
-        print(f"  extracting chunk {chunk_info}")
+        print(f"  正在提取片段 {chunk_info}")
         chunk_result = extract_ingest_facts(
             schema=schema,
             templates=templates,
@@ -367,9 +382,9 @@ def extract_ingest_facts_mapreduce(schema: str, templates: str, rel_source: str,
         chunk_results.append(chunk_result)
     merged = merge_extracted_facts(chunk_results)
     print(
-        "  merged extracted facts: "
-        f"{len(merged.get('entities', []))} entities, "
-        f"{len(merged.get('timeline_events', []))} timeline events"
+        "  合并提取事实："
+        f"{len(merged.get('entities', []))} 个实体，"
+        f"{len(merged.get('timeline_events', []))} 个时间线事件"
     )
     return merged
 
@@ -384,27 +399,28 @@ def synthesize_ingest_pages(
     today: str,
 ) -> dict:
     """Stage 2: Build final wiki pages from extracted facts."""
-    prompt = f"""You are maintaining a novel/worldbuilding wiki.
-Use the extracted facts as your primary grounding.
+    prompt = f"""你正在维护一部小说/世界观 Wiki。
+以提取的事实为基准，生成最终页面。
+所有人类可读内容使用简体中文，JSON 键保持英文。
 
-Schema:
+架构规则：
 {schema}
 
-Section templates (must follow when writing pages):
+章节模板（编写页面时必须遵循）：
 {templates}
 
-Current index:
+当前索引：
 {index_content}
 
-Current overview:
+当前总览：
 {overview_content}
 
-Source file: {rel_source}
+来源文件：{rel_source}
 
-Extracted facts JSON:
+已提取事实 JSON：
 {json.dumps(extracted_facts, ensure_ascii=True)}
 
-Return only valid JSON:
+仅返回合法 JSON：
 {{
   "title": "Source title",
   "slug": "kebab-case-source-slug",
@@ -451,14 +467,14 @@ def local_fallback_ingest(source: Path, source_content: str, today: str) -> dict
         "first_appearance: \"\"\n"
         f"last_updated: {today}\n"
         "---\n\n"
-        "## Narrative Beats\n"
-        f"- Imported from `{source.name}` without LLM enrichment.\n\n"
-        "## Character State Changes\n- TBD\n\n"
-        "## World Facts Introduced\n- TBD\n\n"
-        "## Timeline Events\n- TBD\n\n"
-        "## Unresolved Threads\n- TBD\n\n"
-        "## Canon Conflicts\n- None detected in fallback mode.\n\n"
-        "## Raw Extract\n"
+        "## 叙事要点\n"
+        f"- 从 `{source.name}` 导入，未经 LLM 丰富处理。\n\n"
+        "## 角色状态变化\n- 待补充\n\n"
+        "## 世界观设定\n- 待补充\n\n"
+        "## 时间线事件\n- 待补充\n\n"
+        "## 未解决悬念\n- 待补充\n\n"
+        "## 设定冲突\n- 回退模式下未发现冲突。\n\n"
+        "## 原始摘录\n"
         + source_content[:2500]
         + "\n"
     )
@@ -467,10 +483,10 @@ def local_fallback_ingest(source: Path, source_content: str, today: str) -> dict
         "slug": slug,
         "source_page": source_page,
         "overview_update": None,
-        "index_entries": {"Sources": [f"- [{title}](sources/{slug}.md) — fallback ingest"]},
+        "index_entries": {"Sources": [f"- [{title}](sources/{slug}.md) — 回退摄取"]},
         "domain_pages": [],
         "contradictions": [],
-        "log_entry": f"## [{today}] ingest | {title}\n\nFallback ingest (no LLM provider configured).",
+        "log_entry": f"## [{today}] ingest | {title}\n\n回退摄取（未配置 LLM 提供商）。",
     }
 
 
@@ -478,15 +494,16 @@ def ensure_wiki_scaffold() -> None:
     for dirname in DOMAIN_DIRS:
         (WIKI_DIR / dirname).mkdir(parents=True, exist_ok=True)
     if not INDEX_FILE.exists():
-        lines = ["# Wiki Index", "", "## Overview", "- [Overview](overview.md) — living synthesis", ""]
+        lines = ["# Wiki 索引", "", "## 总览", "- [总览](overview.md) — 世界观总览", ""]
         for section in INDEX_SECTIONS:
-            lines.extend([f"## {section}", ""])
+            label = INDEX_SECTION_LABELS.get(section, section)
+            lines.extend([f"## {label}", ""])
         write_file(INDEX_FILE, "\n".join(lines).strip() + "\n")
     if not OVERVIEW_FILE.exists():
         write_file(
             OVERVIEW_FILE,
             "---\n"
-            "title: \"Overview\"\n"
+            "title: \"总览\"\n"
             "type: synthesis\n"
             "tags: []\n"
             "sources: []\n"
@@ -498,17 +515,18 @@ def ensure_wiki_scaffold() -> None:
             "first_appearance: \"\"\n"
             f"last_updated: {date.today().isoformat()}\n"
             "---\n\n"
-            "# Overview\n\nNo sources ingested yet.\n",
+            "# 总览\n\n尚无已摄取来源。\n",
         )
 
 
 def update_index(entries: dict[str, list[str]]) -> None:
     content = read_file(INDEX_FILE)
     for section, items in entries.items():
-        header = f"## {section}"
+        label = INDEX_SECTION_LABELS.get(section, section)
+        header = f"## {label}"
         if header not in content:
             content += f"\n{header}\n"
-        section_match = re.search(rf"(## {re.escape(section)}\n)([\s\S]*?)(?=\n## |\Z)", content)
+        section_match = re.search(rf"(## {re.escape(label)}\n)([\s\S]*?)(?=\n## |\Z)", content)
         existing_items: list[str] = []
         if section_match:
             existing_items = [
@@ -549,11 +567,11 @@ def validate_pages(changed_pages: list[Path]) -> None:
             if Path(link).stem.lower() not in page_stems:
                 broken.append((page.relative_to(WIKI_DIR), link))
     if broken:
-        print("  warning: broken wikilinks found")
+        print("  警告：发现断裂 wikilink")
         for rel, link in broken[:10]:
             print(f"    wiki/{rel} -> [[{link}]]")
     else:
-        print("  validation: no broken wikilinks in changed pages")
+        print("  校验通过：变更页面中无断裂 wikilink")
 
 
 def validate_ingest(changed_pages: list[str] | None = None) -> dict:
@@ -608,15 +626,15 @@ def ingest(source_path: str, auto_convert: bool = True) -> None:
     ensure_wiki_scaffold()
     source = Path(source_path)
     if not source.exists():
-        print(f"Error: file not found: {source_path}")
+        print(f"错误：文件未找到：{source_path}")
         sys.exit(1)
 
     if source.suffix.lower() != ".md":
         if not auto_convert:
-            print(f"  skipping non-md with --no-convert: {source.name}")
+            print(f"  跳过非 md 文件（--no-convert）：{source.name}")
             return
         if source.suffix.lower() not in CONVERTIBLE_EXTENSIONS:
-            print(f"  unsupported format: {source.suffix}")
+            print(f"  不支持的格式：{source.suffix}")
             return
         source = convert_to_md(source)
 
@@ -643,10 +661,10 @@ def ingest(source_path: str, auto_convert: bool = True) -> None:
         )
         data = normalize_ingest_payload(raw_data, source=source, today=today)
     except Exception:
-        print("  warning: LLM call failed, using deterministic fallback ingest")
+        print("  警告：LLM 调用失败，使用确定性回退摄取")
         data = local_fallback_ingest(source, source_content, today)
     if was_truncated:
-        print(f"  note: source prompt truncated to {MAX_SOURCE_CHARS} chars for stable ingestion")
+        print(f"  注意：来源提示词已截断至 {MAX_SOURCE_CHARS} 字符以保证稳定摄取")
 
     changed = []
     slug = data["slug"]
@@ -668,39 +686,39 @@ def ingest(source_path: str, auto_convert: bool = True) -> None:
 
     contradictions = data.get("contradictions", [])
     if contradictions:
-        print("  contradictions:")
+        print("  设定冲突：")
         for item in contradictions:
             print(f"    - {item}")
 
     validate_pages(changed)
-    print(f"  done ingest: {data['title']}")
+    print(f"  摄取完成：{data['title']}")
 
 
 def main() -> None:
     if len(sys.argv) == 2 and sys.argv[1] == "--validate-only":
-        print("Running wiki validation (no ingest)...\n")
+        print("正在运行 Wiki 校验（不执行摄取）...\n")
         result = validate_ingest()
         if result["broken_links"]:
-            print(f"Broken wikilinks: {len(result['broken_links'])}")
+            print(f"断裂 wikilink：{len(result['broken_links'])}")
             for page, link in result["broken_links"][:20]:
                 print(f"  wiki/{page} -> [[{link}]]")
         else:
-            print("No broken wikilinks found.")
+            print("未发现断裂 wikilink。")
 
         if result["unindexed"]:
-            print(f"Pages not in index.md: {len(result['unindexed'])}")
+            print(f"未在 index.md 中索引的页面：{len(result['unindexed'])}")
             for page in result["unindexed"][:20]:
                 print(f"  wiki/{page}")
         else:
-            print("All pages are indexed.")
+            print("所有页面均已索引。")
         sys.exit(0)
 
     no_convert = "--no-convert" in sys.argv
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
 
     if not args:
-        print("Usage: python tools/ingest.py <file-or-dir> [more files] [--no-convert]")
-        print("       python tools/ingest.py --validate-only")
+        print("用法：python tools/ingest.py <文件或目录> [更多文件] [--no-convert]")
+        print("      python tools/ingest.py --validate-only")
         sys.exit(1)
 
     paths: list[Path] = []
@@ -714,7 +732,7 @@ def main() -> None:
                     paths.append(candidate)
 
     if not paths:
-        print("No supported files found.")
+        print("未找到支持的文件。")
         sys.exit(1)
 
     seen = set()

@@ -1,8 +1,14 @@
-# Storyforge Wiki — Schema & Workflow Instructions
+# Storyforge Wiki — 架构与工作流说明
 
-This wiki is maintained by Claude Code as a hybrid story bible and worldbuilding system.
+本 Wiki 由 Claude Code 维护，作为混合式故事圣经（story bible）与世界观构建系统。
 
-## Slash Commands
+## 语言规则（最高优先级）
+
+- 所有人类可读内容必须使用简体中文，包括页面标题、正文、章节标题、信息框标签、索引说明、日志和报告。
+- 人物名、地名等正式专名保持原文稳定，不强行翻译；必要时可在首次出现处补充中文说明。
+- YAML 键、`type` 枚举、目录名、命令名、代码标识符、关系枚举和 WikiLink 语法保持英文，避免破坏工具兼容性。
+
+## 斜杠命令
 
 - `/wiki-ingest`
 - `/wiki-query`
@@ -10,9 +16,9 @@ This wiki is maintained by Claude Code as a hybrid story bible and worldbuilding
 - `/wiki-lint`
 - `/wiki-graph`
 
-## Domain Model
+## 领域模型
 
-Primary page types:
+主要页面类型：
 - `source`
 - `character`
 - `location`
@@ -26,14 +32,14 @@ Primary page types:
 - `chapter`
 - `synthesis`
 
-Canonical folders under `wiki/`:
+`wiki/` 下的标准目录：
 - `sources`, `characters`, `locations`, `factions`, `cultures`, `artifacts`, `systems`, `events`, `timeline`, `arcs`, `chapters`, `syntheses`
 
-Section templates are defined in:
+章节模板定义于：
 - `templates/wiki-section-templates.md`
-- Always follow these heading structures when creating/updating pages.
+- 创建或更新页面时必须遵循这些标题结构。
 
-## Frontmatter Contract
+## Frontmatter 契约
 
 ```yaml
 ---
@@ -51,53 +57,53 @@ last_updated: YYYY-MM-DD
 ---
 ```
 
-## Ingest Workflow
+## 摄取工作流（Ingest）
 
-1. Read source file fully (auto-convert non-md with markitdown if needed)
-2. Read `wiki/index.md` and `wiki/overview.md`
-3. Write `wiki/sources/<slug>.md` with:
-   - narrative beats
-   - character state changes
-   - world facts introduced
-   - timeline events
-   - unresolved threads
-   - canon conflicts
-4. Update or create domain pages across the fiction folders
-   - Domain pages must follow the corresponding section template headings.
-5. Update `wiki/index.md`
-6. Update `wiki/overview.md`
-7. Append `wiki/log.md` with `## [YYYY-MM-DD] ingest | <title>`
-8. Validate links and index registration
+1. 完整阅读源文件（非 md 格式需先用 markitdown 自动转换）
+2. 阅读 `wiki/index.md` 和 `wiki/overview.md`
+3. 写入 `wiki/sources/<slug>.md`，内容包括：
+   - 叙事要点
+   - 角色状态变化
+   - 引入的世界观设定
+   - 时间线事件
+   - 未解决的悬念
+   - 与既有设定的冲突
+4. 更新或创建各领域页面
+   - 领域页面必须遵循对应的章节模板标题结构。
+5. 更新 `wiki/index.md`
+6. 更新 `wiki/overview.md`
+7. 在 `wiki/log.md` 追加 `## [YYYY-MM-DD] ingest | <title>`
+8. 校验链接和索引注册情况
 
-## Query Workflow
+## 查询工作流（Query）
 
-1. Read `wiki/index.md`
-2. Read relevant pages, prioritizing `chapters`, `arcs`, `timeline` for scoped questions
-3. Answer with markdown + `[[PageName]]` citations
-4. Add `## Sources`
-5. Ask whether to save as `wiki/syntheses/<slug>.md`
+1. 阅读 `wiki/index.md`
+2. 阅读相关页面，针对范围明确的问题优先查阅 `chapters`、`arcs`、`timeline`
+3. 以 markdown 格式回答，并使用 `[[PageName]]` 引用
+4. 添加 `## 来源`
+5. 询问是否保存为 `wiki/syntheses/<slug>.md`
 
-## Lint Workflow
+## 校验工作流（Lint）
 
-Run checks for:
-- broken/orphan wikilinks
-- timeline contradictions
-- character continuity errors
-- unresolved setup/payoff
-- alias collisions
-- canon drift (`canon_status: contested` with no explanation)
-- sparse pages with low link density
+检查以下项目：
+- 断链或孤立的 wikilink
+- 时间线矛盾
+- 角色连续性错误
+- 未解决的设置/回应（setup/payoff）
+- 别名冲突
+- canon 漂移（`canon_status: contested` 但无说明）
+- 链接密度过低的稀疏页面
 
-## Health Workflow
+## 健康检查工作流（Health）
 
-Run `python tools/health.py` for deterministic checks:
-- stubs
-- index sync
-- log coverage
+运行 `python tools/health.py` 进行确定性检查：
+- 空白页
+- 索引同步
+- 日志覆盖率
 
-## Graph Workflow
+## 图谱工作流（Graph）
 
-Generate graph with:
-- `EXTRACTED` edges from wikilinks
-- typed inferred narrative edges (`ALLY_OF`, `CONFLICTS_WITH`, `LOCATED_IN`, `CAUSES`, `LEARNS`, `BETRAYS`, `OWNS`, `MEMBER_OF`)
-- optional confidence and community detection
+生成图谱，包含：
+- 来自 wikilink 的 `EXTRACTED` 边
+- 带类型的推断叙事边（`ALLY_OF`、`CONFLICTS_WITH`、`LOCATED_IN`、`CAUSES`、`LEARNS`、`BETRAYS`、`OWNS`、`MEMBER_OF`）
+- 可选的置信度和社群检测

@@ -1,245 +1,245 @@
-# Storyforge Wiki Section Templates (Fandom Style)
+# Storyforge Wiki 章节模板（Fandom 风格）
 
-Use these templates when generating or updating pages. They are intentionally patterned after common Fandom-style page anatomy: infobox first, then clear lore sections.
+生成或更新页面时使用这些模板。它们刻意模仿常见的 Fandom 式页面结构：先信息框，再清晰的设定章节。所有人类可读内容使用简体中文。
 
-## Character Page Template (`wiki/characters/*.md`)
+## 人物页面模板（`wiki/characters/*.md`）
 
 ```markdown
 <table class="infobox">
-  <tr><th colspan="2">Character Information</th></tr>
-  <tr><td>Full Name</td><td>TBD</td></tr>
-  <tr><td>Aliases</td><td>TBD</td></tr>
-  <tr><td>Species</td><td>TBD</td></tr>
-  <tr><td>Affiliation</td><td>TBD</td></tr>
-  <tr><td>Status</td><td>TBD</td></tr>
-  <tr><td>First Appearance</td><td>TBD</td></tr>
+  <tr><th colspan="2">人物信息</th></tr>
+  <tr><td>全名</td><td>待定</td></tr>
+  <tr><td>别名</td><td>待定</td></tr>
+  <tr><td>种族</td><td>待定</td></tr>
+  <tr><td>所属</td><td>待定</td></tr>
+  <tr><td>状态</td><td>待定</td></tr>
+  <tr><td>首次出场</td><td>待定</td></tr>
 </table>
 
-## Overview
-- One-paragraph summary of who they are and why they matter.
+## 概述
+- 一段话概括该人物是谁、为何重要。
 
-## Biography
-- Early life:
-- Major turning points:
-- Current trajectory:
+## 生平
+- 早年经历：
+- 重大转折点：
+- 当前走向：
 
-## Personality and Traits
-- Strengths:
-- Flaws:
-- Motivations:
+## 性格与特质
+- 优点：
+- 缺陷：
+- 动机：
 
-## Abilities and Equipment
-- Abilities:
-- Signature skills:
-- Notable equipment:
+## 能力与装备
+- 能力：
+- 标志性技能：
+- 重要装备：
 
-## Relationships
-- [[CharacterOrFaction]] - relationship and current status
+## 关系
+- [[CharacterOrFaction]] - 关系及当前状态
 
-## Appearances and Arc Role
-- Arc participation:
-- Key chapters/events:
+## 出场与故事弧作用
+- 参与的故事弧：
+- 关键章节/事件：
 
-## Trivia
-- Notes, inspirations, naming facts, or author notes.
+## 花絮
+- 备注、灵感来源、命名相关事实或作者说明。
 ```
 
-## Arc Page Template (`wiki/arcs/*.md`)
+## 故事弧页面模板（`wiki/arcs/*.md`）
 
 ```markdown
 <table class="infobox">
-  <tr><th colspan="2">Arc Information</th></tr>
-  <tr><td>Name</td><td>TBD</td></tr>
-  <tr><td>Timeline</td><td>TBD</td></tr>
-  <tr><td>Main Conflict</td><td>TBD</td></tr>
-  <tr><td>Primary Cast</td><td>TBD</td></tr>
-  <tr><td>Status</td><td>TBD</td></tr>
+  <tr><th colspan="2">故事弧信息</th></tr>
+  <tr><td>名称</td><td>待定</td></tr>
+  <tr><td>时间线</td><td>待定</td></tr>
+  <tr><td>核心冲突</td><td>待定</td></tr>
+  <tr><td>主要角色</td><td>待定</td></tr>
+  <tr><td>状态</td><td>待定</td></tr>
 </table>
 
-## Synopsis
-- Short summary of arc premise and stakes.
+## 简介
+- 简要概括故事弧前提和利害关系。
 
-## Plot
-1. Setup
-2. Rising conflict
-3. Midpoint reversal
-4. Climax
-5. Resolution
+## 情节
+1. 铺垫
+2. 冲突升级
+3. 中点反转
+4. 高潮
+5. 收尾
 
-## Major Events
-- [[EventName]] - impact on arc
+## 主要事件
+- [[EventName]] - 对故事弧的影响
 
-## Characters Involved
-- [[CharacterName]] - role in arc
+## 涉及人物
+- [[CharacterName]] - 在故事弧中的角色
 
-## Continuity Notes
-- Contradictions or uncertain canon points.
+## 连续性说明
+- 矛盾之处或不确定的 canon 设定点。
 ```
 
-## Location Page Template (`wiki/locations/*.md`)
+## 地点页面模板（`wiki/locations/*.md`）
 
 ```markdown
 <table class="infobox">
-  <tr><th colspan="2">Location Information</th></tr>
-  <tr><td>Region</td><td>TBD</td></tr>
-  <tr><td>Type</td><td>TBD</td></tr>
-  <tr><td>Ruling Power</td><td>TBD</td></tr>
-  <tr><td>Population</td><td>TBD</td></tr>
-  <tr><td>First Appearance</td><td>TBD</td></tr>
+  <tr><th colspan="2">地点信息</th></tr>
+  <tr><td>区域</td><td>待定</td></tr>
+  <tr><td>类型</td><td>待定</td></tr>
+  <tr><td>统治势力</td><td>待定</td></tr>
+  <tr><td>人口</td><td>待定</td></tr>
+  <tr><td>首次出场</td><td>待定</td></tr>
 </table>
 
-## Overview
-- What and where this location is.
+## 概述
+- 这个地点是什么、位于何处。
 
-## Geography
-- Terrain:
-- Climate:
-- Important districts/sites:
+## 地理
+- 地形：
+- 气候：
+- 重要区域/地点：
 
-## History
-- Founding:
-- Historical turning points:
+## 历史
+- 建立：
+- 历史转折点：
 
-## Politics and Society
-- Who controls it:
-- Social order and factions:
+## 政治与社会
+- 由谁掌控：
+- 社会秩序与派系：
 
-## Notable Events
-- [[EventName]] - relevance to location
+## 重要事件
+- [[EventName]] - 与该地点的关联
 ```
 
-## Faction Page Template (`wiki/factions/*.md`)
+## 组织页面模板（`wiki/factions/*.md`）
 
 ```markdown
 <table class="infobox">
-  <tr><th colspan="2">Faction Information</th></tr>
-  <tr><td>Type</td><td>TBD</td></tr>
-  <tr><td>Leader</td><td>TBD</td></tr>
-  <tr><td>Base of Operations</td><td>TBD</td></tr>
-  <tr><td>Alignment</td><td>TBD</td></tr>
-  <tr><td>Status</td><td>TBD</td></tr>
+  <tr><th colspan="2">组织信息</th></tr>
+  <tr><td>类型</td><td>待定</td></tr>
+  <tr><td>领导者</td><td>待定</td></tr>
+  <tr><td>据点</td><td>待定</td></tr>
+  <tr><td>立场</td><td>待定</td></tr>
+  <tr><td>状态</td><td>待定</td></tr>
 </table>
 
-## Overview
-- One-paragraph definition and role in setting.
+## 概述
+- 一段话定义该组织及其在设定中的作用。
 
-## History
-- Origin:
-- Growth:
-- Major conflicts:
+## 历史
+- 起源：
+- 发展：
+- 重大冲突：
 
-## Organization
-- Hierarchy:
-- Important members:
-- Internal fractures:
+## 组织结构
+- 层级：
+- 重要成员：
+- 内部裂痕：
 
-## Goals and Methods
-- Public objective:
-- Hidden agenda:
-- Typical methods:
+## 目标与手段
+- 公开目标：
+- 隐藏意图：
+- 常用手段：
 
-## Relationships
-- Allies:
-- Enemies:
-- Neutral actors:
+## 关系
+- 盟友：
+- 敌对方：
+- 中立势力：
 ```
 
-## System Page Template (`wiki/systems/*.md`)
+## 体系页面模板（`wiki/systems/*.md`）
 
 ```markdown
 <table class="infobox">
-  <tr><th colspan="2">System Information</th></tr>
-  <tr><td>Category</td><td>TBD</td></tr>
-  <tr><td>Source</td><td>TBD</td></tr>
-  <tr><td>Users</td><td>TBD</td></tr>
-  <tr><td>Limitations</td><td>TBD</td></tr>
-  <tr><td>Risk Level</td><td>TBD</td></tr>
+  <tr><th colspan="2">体系信息</th></tr>
+  <tr><td>类别</td><td>待定</td></tr>
+  <tr><td>来源</td><td>待定</td></tr>
+  <tr><td>使用者</td><td>待定</td></tr>
+  <tr><td>限制</td><td>待定</td></tr>
+  <tr><td>风险等级</td><td>待定</td></tr>
 </table>
 
-## Overview
-- What the system is and what it affects.
+## 概述
+- 该体系是什么、影响哪些方面。
 
-## Mechanics
-- Core rule:
-- Rule interactions:
-- Failure modes:
+## 机制
+- 核心规则：
+- 规则间的相互作用：
+- 失效方式：
 
-## Limitations and Costs
-- Hard limits:
-- Costs:
-- Side effects:
+## 限制与代价
+- 硬性限制：
+- 代价：
+- 副作用：
 
-## Known Users or Practitioners
-- [[CharacterOrFaction]] - usage profile
+## 已知使用者或实践者
+- [[CharacterOrFaction]] - 使用情况
 
-## Canon Clarifications
-- Confirmed facts:
-- Ambiguous points:
+## Canon 澄清
+- 已确认事实：
+- 存疑之处：
 ```
 
-## Event Page Template (`wiki/events/*.md`)
+## 事件页面模板（`wiki/events/*.md`）
 
 ```markdown
 <table class="infobox">
-  <tr><th colspan="2">Event Information</th></tr>
-  <tr><td>Date/Era</td><td>TBD</td></tr>
-  <tr><td>Location</td><td>TBD</td></tr>
-  <tr><td>Participants</td><td>TBD</td></tr>
-  <tr><td>Outcome</td><td>TBD</td></tr>
-  <tr><td>Significance</td><td>TBD</td></tr>
+  <tr><th colspan="2">事件信息</th></tr>
+  <tr><td>日期/时代</td><td>待定</td></tr>
+  <tr><td>地点</td><td>待定</td></tr>
+  <tr><td>参与者</td><td>待定</td></tr>
+  <tr><td>结果</td><td>待定</td></tr>
+  <tr><td>重要性</td><td>待定</td></tr>
 </table>
 
-## Summary
-- One paragraph description of what happened.
+## 概要
+- 一段话描述发生了什么。
 
-## Prelude
-- Events that led to this.
+## 前情
+- 导致此事件发生的前因。
 
-## Event Breakdown
-- Beat-by-beat summary of critical moments.
+## 事件经过
+- 逐个关键时刻的详细梳理。
 
-## Aftermath
-- Immediate effects:
-- Long-term consequences:
+## 后续影响
+- 直接影响：
+- 长期后果：
 
-## Related Pages
+## 相关页面
 - [[CharacterName]]
 - [[LocationName]]
 - [[ArcName]]
 ```
 
-## Timeline Page Template (`wiki/timeline/*.md`)
+## 时间线页面模板（`wiki/timeline/*.md`）
 
 ```markdown
-## Timeline Overview
-- Scope of this timeline page.
+## 时间线概述
+- 该时间线页面的范围。
 
-## Chronology
-- YYYY or Era marker - [[EventName]] - one-line significance
+## 年表
+- YYYY 或时代标记 - [[EventName]] - 一句话说明重要性
 
-## Uncertain Dates
-- Ambiguous event ordering.
+## 不确定的日期
+- 顺序存疑的事件。
 ```
 
-## Source Page Template (`wiki/sources/*.md`)
+## 来源页面模板（`wiki/sources/*.md`）
 
 ```markdown
-## Source Overview
-- Document type, origin, and reliability.
+## 来源概述
+- 文档类型、来源和可靠性。
 
-## Plot and Lore Extracts
-- Narrative beats:
-- Worldbuilding details:
+## 情节与设定摘录
+- 叙事要点：
+- 世界观细节：
 
-## Character Updates
-- [[CharacterName]]: from ... to ...
+## 人物更新
+- [[CharacterName]]：从……到……
 
-## Timeline Additions
-- [[EventName]] ...
+## 时间线新增
+- [[EventName]] ……
 
-## Open Questions
-- Unresolved threads and speculative points.
+## 未解决问题
+- 悬而未决的线索和猜测性要点。
 
-## Contradictions and Retcons
-- Conflicts with existing canon.
+## 冲突与设定修订
+- 与既有 canon 的冲突。
 ```

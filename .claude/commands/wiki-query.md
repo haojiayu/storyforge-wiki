@@ -1,14 +1,14 @@
-Query the Novel World Wiki and synthesize canon-aware answers.
+查询 Novel World Wiki 并生成符合 canon 设定的回答。所有输出使用简体中文。
 
-Usage: /wiki-query $ARGUMENTS
+用法：/wiki-query $ARGUMENTS
 
-$ARGUMENTS is the question, for example:
-- `What does Mira know by chapter 12?`
-- `List timeline conflicts in arc two`
+$ARGUMENTS 为问题，例如：
+- `Mira 在第 12 章之前知道什么？`
+- `列出第二个故事弧中的时间线冲突`
 
-Workflow:
-1. Read `wiki/index.md` and identify relevant pages
-2. Prefer scoped retrieval across `chapters`, `arcs`, `timeline`, `characters`
-3. Answer in markdown with `[[PageName]]` citations
-4. Include `## Sources`
-5. Ask whether to save as `wiki/syntheses/<slug>.md`
+工作流：
+1. 阅读 `wiki/index.md` 并确定相关页面
+2. 优先在 `chapters`、`arcs`、`timeline`、`characters` 范围内检索
+3. 以 markdown 格式回答，并使用 `[[PageName]]` 引用
+4. 包含 `## 来源`
+5. 询问是否保存为 `wiki/syntheses/<slug>.md`

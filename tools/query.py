@@ -27,7 +27,7 @@ def read_file(path: Path) -> str:
 def write_file(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
-    print(f"  saved: {path.relative_to(REPO_ROOT)}")
+    print(f"  已保存：{path.relative_to(REPO_ROOT)}")
 
 
 def call_llm(prompt: str, model_env: str, default_model: str, max_tokens: int = 4096) -> str:
@@ -80,22 +80,24 @@ def synthesize(question: str, pages: list[Path]) -> str:
     for p in pages:
         pages_context += f"\n\n### {p.relative_to(REPO_ROOT)}\n{read_file(p)[:6000]}"
     schema = read_file(SCHEMA_FILE)
-    prompt = f"""You are answering a novel/worldbuilding wiki query.
-Schema:
+    prompt = f"""你正在回答小说/世界观 Wiki 的查询。
+所有回答内容使用简体中文。
+
+架构规则：
 {schema}
 
-Question:
+问题：
 {question}
 
-Wiki context:
+Wiki 上下文：
 {pages_context}
 
-Write a markdown answer optimized for canon and continuity use:
-- Explicitly state uncertainty for contested canon.
-- Use timeline/chapter ordering when relevant.
-- Cite supporting pages as [[PageName]].
-- End with:
-## Sources
+撰写 Markdown 格式的答案，面向正典与连续性使用：
+- 对争议正典明确说明不确定性。
+- 涉及时间顺序时按时间线/章节排序。
+- 用 [[页面名]] 引用支撑页面。
+- 以如下格式结尾：
+## 来源
 - ...
 """
     try:
@@ -103,12 +105,12 @@ Write a markdown answer optimized for canon and continuity use:
     except Exception:
         sources = "\n".join(f"- [[{p.stem}]]" for p in pages[:12])
         return (
-            "## Fallback Answer\n"
-            "LLM provider is not configured, so this is a retrieval-only fallback.\n\n"
-            f"Question: {question}\n\n"
-            "Use these pages as starting points:\n"
+            "## 备用答案\n"
+            "LLM 提供商未配置，以下为仅检索模式的备用结果。\n\n"
+            f"问题：{question}\n\n"
+            "以下页面可作为参考起点：\n"
             f"{sources}\n\n"
-            "## Sources\n"
+            "## 来源\n"
             f"{sources}"
         )
 
@@ -136,13 +138,13 @@ def save_synthesis(question: str, answer: str, save_path: str) -> None:
 
 def query(question: str, save_path: str | None) -> None:
     if not read_file(INDEX_FILE):
-        print("Wiki index missing/empty. Ingest first.")
+        print("Wiki 索引缺失或为空，请先执行摄取。")
         sys.exit(1)
 
     pages = find_relevant_pages(question)
     if not pages:
         pages = [INDEX_FILE]
-    print(f"  querying with {len(pages)} pages")
+    print(f"  正在查询，共 {len(pages)} 个页面")
     answer = synthesize(question, pages)
     print("\n" + "=" * 60)
     print(answer)
@@ -157,13 +159,13 @@ def query(question: str, save_path: str | None) -> None:
 
     append_log(
         f"## [{date.today().isoformat()}] query | {question[:80]}\n\n"
-        f"Synthesized from {len(pages)} pages."
-        + (f" Saved to {actual_save}." if actual_save else "")
+        f"综合自 {len(pages)} 个页面。"
+        + (f" 已保存至 {actual_save}。" if actual_save else "")
     )
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Query the Novel World Wiki")
+    parser = argparse.ArgumentParser(description="查询小说世界观 Wiki")
     parser.add_argument("question")
     parser.add_argument("--save", nargs="?", const="", default=None)
     args = parser.parse_args()

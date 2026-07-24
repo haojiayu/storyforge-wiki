@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ensure required section headings and infoboxes exist for wiki domain pages."""
+"""确保 wiki 领域页面存在所需的章节标题和信息框。"""
 
 from __future__ import annotations
 
@@ -11,124 +11,124 @@ WIKI_DIR = REPO_ROOT / "wiki"
 
 REQUIRED_HEADINGS: dict[str, list[str]] = {
     "characters": [
-        "## Overview",
-        "## Biography",
-        "## Personality and Traits",
-        "## Abilities and Equipment",
-        "## Relationships",
-        "## Appearances and Arc Role",
-        "## Trivia",
+        "## 概述",
+        "## 生平",
+        "## 性格与特质",
+        "## 能力与装备",
+        "## 关系",
+        "## 出场与故事弧作用",
+        "## 花絮",
     ],
     "arcs": [
-        "## Synopsis",
-        "## Plot",
-        "## Major Events",
-        "## Characters Involved",
-        "## Continuity Notes",
+        "## 简介",
+        "## 情节",
+        "## 主要事件",
+        "## 涉及人物",
+        "## 连续性说明",
     ],
     "locations": [
-        "## Overview",
-        "## Geography",
-        "## History",
-        "## Politics and Society",
-        "## Notable Events",
+        "## 概述",
+        "## 地理",
+        "## 历史",
+        "## 政治与社会",
+        "## 重要事件",
     ],
     "factions": [
-        "## Overview",
-        "## History",
-        "## Organization",
-        "## Goals and Methods",
-        "## Relationships",
+        "## 概述",
+        "## 历史",
+        "## 组织结构",
+        "## 目标与手段",
+        "## 关系",
     ],
     "systems": [
-        "## Overview",
-        "## Mechanics",
-        "## Limitations and Costs",
-        "## Known Users or Practitioners",
-        "## Canon Clarifications",
+        "## 概述",
+        "## 机制",
+        "## 限制与代价",
+        "## 已知使用者或实践者",
+        "## Canon 澄清",
     ],
     "events": [
-        "## Summary",
-        "## Prelude",
-        "## Event Breakdown",
-        "## Aftermath",
-        "## Related Pages",
+        "## 概要",
+        "## 前情",
+        "## 事件经过",
+        "## 后续影响",
+        "## 相关页面",
     ],
     "timeline": [
-        "## Timeline Overview",
-        "## Chronology",
-        "## Uncertain Dates",
+        "## 时间线概述",
+        "## 年表",
+        "## 不确定的日期",
     ],
     "sources": [
-        "## Source Overview",
-        "## Plot and Lore Extracts",
-        "## Character Updates",
-        "## Timeline Additions",
-        "## Open Questions",
-        "## Contradictions and Retcons",
+        "## 来源概述",
+        "## 情节与设定摘录",
+        "## 人物更新",
+        "## 时间线新增",
+        "## 未解决问题",
+        "## 冲突与设定修订",
     ],
 }
 
 INFOBOXES: dict[str, str] = {
     "characters": (
         "<table class=\"infobox\">\n"
-        "  <tr><th colspan=\"2\">Character Information</th></tr>\n"
-        "  <tr><td>Full Name</td><td>TBD</td></tr>\n"
-        "  <tr><td>Aliases</td><td>TBD</td></tr>\n"
-        "  <tr><td>Species</td><td>TBD</td></tr>\n"
-        "  <tr><td>Affiliation</td><td>TBD</td></tr>\n"
-        "  <tr><td>Status</td><td>TBD</td></tr>\n"
-        "  <tr><td>First Appearance</td><td>TBD</td></tr>\n"
+        "  <tr><th colspan=\"2\">人物信息</th></tr>\n"
+        "  <tr><td>全名</td><td>待定</td></tr>\n"
+        "  <tr><td>别名</td><td>待定</td></tr>\n"
+        "  <tr><td>种族</td><td>待定</td></tr>\n"
+        "  <tr><td>所属</td><td>待定</td></tr>\n"
+        "  <tr><td>状态</td><td>待定</td></tr>\n"
+        "  <tr><td>首次出场</td><td>待定</td></tr>\n"
         "</table>"
     ),
     "arcs": (
         "<table class=\"infobox\">\n"
-        "  <tr><th colspan=\"2\">Arc Information</th></tr>\n"
-        "  <tr><td>Name</td><td>TBD</td></tr>\n"
-        "  <tr><td>Timeline</td><td>TBD</td></tr>\n"
-        "  <tr><td>Main Conflict</td><td>TBD</td></tr>\n"
-        "  <tr><td>Primary Cast</td><td>TBD</td></tr>\n"
-        "  <tr><td>Status</td><td>TBD</td></tr>\n"
+        "  <tr><th colspan=\"2\">故事弧信息</th></tr>\n"
+        "  <tr><td>名称</td><td>待定</td></tr>\n"
+        "  <tr><td>时间线</td><td>待定</td></tr>\n"
+        "  <tr><td>核心冲突</td><td>待定</td></tr>\n"
+        "  <tr><td>主要角色</td><td>待定</td></tr>\n"
+        "  <tr><td>状态</td><td>待定</td></tr>\n"
         "</table>"
     ),
     "locations": (
         "<table class=\"infobox\">\n"
-        "  <tr><th colspan=\"2\">Location Information</th></tr>\n"
-        "  <tr><td>Region</td><td>TBD</td></tr>\n"
-        "  <tr><td>Type</td><td>TBD</td></tr>\n"
-        "  <tr><td>Ruling Power</td><td>TBD</td></tr>\n"
-        "  <tr><td>Population</td><td>TBD</td></tr>\n"
-        "  <tr><td>First Appearance</td><td>TBD</td></tr>\n"
+        "  <tr><th colspan=\"2\">地点信息</th></tr>\n"
+        "  <tr><td>区域</td><td>待定</td></tr>\n"
+        "  <tr><td>类型</td><td>待定</td></tr>\n"
+        "  <tr><td>统治势力</td><td>待定</td></tr>\n"
+        "  <tr><td>人口</td><td>待定</td></tr>\n"
+        "  <tr><td>首次出场</td><td>待定</td></tr>\n"
         "</table>"
     ),
     "factions": (
         "<table class=\"infobox\">\n"
-        "  <tr><th colspan=\"2\">Faction Information</th></tr>\n"
-        "  <tr><td>Type</td><td>TBD</td></tr>\n"
-        "  <tr><td>Leader</td><td>TBD</td></tr>\n"
-        "  <tr><td>Base of Operations</td><td>TBD</td></tr>\n"
-        "  <tr><td>Alignment</td><td>TBD</td></tr>\n"
-        "  <tr><td>Status</td><td>TBD</td></tr>\n"
+        "  <tr><th colspan=\"2\">组织信息</th></tr>\n"
+        "  <tr><td>类型</td><td>待定</td></tr>\n"
+        "  <tr><td>领导者</td><td>待定</td></tr>\n"
+        "  <tr><td>据点</td><td>待定</td></tr>\n"
+        "  <tr><td>立场</td><td>待定</td></tr>\n"
+        "  <tr><td>状态</td><td>待定</td></tr>\n"
         "</table>"
     ),
     "systems": (
         "<table class=\"infobox\">\n"
-        "  <tr><th colspan=\"2\">System Information</th></tr>\n"
-        "  <tr><td>Category</td><td>TBD</td></tr>\n"
-        "  <tr><td>Source</td><td>TBD</td></tr>\n"
-        "  <tr><td>Users</td><td>TBD</td></tr>\n"
-        "  <tr><td>Limitations</td><td>TBD</td></tr>\n"
-        "  <tr><td>Risk level</td><td>TBD</td></tr>\n"
+        "  <tr><th colspan=\"2\">体系信息</th></tr>\n"
+        "  <tr><td>类别</td><td>待定</td></tr>\n"
+        "  <tr><td>来源</td><td>待定</td></tr>\n"
+        "  <tr><td>使用者</td><td>待定</td></tr>\n"
+        "  <tr><td>限制</td><td>待定</td></tr>\n"
+        "  <tr><td>风险等级</td><td>待定</td></tr>\n"
         "</table>"
     ),
     "events": (
         "<table class=\"infobox\">\n"
-        "  <tr><th colspan=\"2\">Event Information</th></tr>\n"
-        "  <tr><td>Date/Era</td><td>TBD</td></tr>\n"
-        "  <tr><td>Location</td><td>TBD</td></tr>\n"
-        "  <tr><td>Participants</td><td>TBD</td></tr>\n"
-        "  <tr><td>Outcome</td><td>TBD</td></tr>\n"
-        "  <tr><td>Significance</td><td>TBD</td></tr>\n"
+        "  <tr><th colspan=\"2\">事件信息</th></tr>\n"
+        "  <tr><td>日期/时代</td><td>待定</td></tr>\n"
+        "  <tr><td>地点</td><td>待定</td></tr>\n"
+        "  <tr><td>参与者</td><td>待定</td></tr>\n"
+        "  <tr><td>结果</td><td>待定</td></tr>\n"
+        "  <tr><td>重要性</td><td>待定</td></tr>\n"
         "</table>"
     ),
 }
@@ -175,7 +175,7 @@ def ensure_headings(path: Path, headings: list[str], infobox: str | None) -> boo
 
     for heading in headings:
         if heading not in body:
-            body = body.rstrip() + f"\n\n{heading}\n- TBD\n"
+            body = body.rstrip() + f"\n\n{heading}\n- 待定\n"
             changed = True
 
     if changed:
@@ -196,8 +196,8 @@ def main() -> None:
             infobox = INFOBOXES.get(folder)
             if ensure_headings(page, headings, infobox):
                 updated += 1
-                print(f"updated: {page.relative_to(REPO_ROOT)}")
-    print(f"scanned: {scanned}, updated: {updated}")
+                print(f"已更新：{page.relative_to(REPO_ROOT)}")
+    print(f"已扫描：{scanned}，已更新：{updated}")
 
 
 if __name__ == "__main__":

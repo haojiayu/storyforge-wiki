@@ -159,17 +159,17 @@ def simple_report(nodes: list[dict], edges: list[dict]) -> str:
     for e in edges:
         edge_types[e["type"]] += 1
     lines = [
-        f"# Narrative Graph Report — {date.today().isoformat()}",
+        f"# 叙事图谱报告 — {date.today().isoformat()}",
         "",
-        f"- Nodes: {len(nodes)}",
-        f"- Edges: {len(edges)}",
+        f"- 节点：{len(nodes)}",
+        f"- 边：{len(edges)}",
         "",
-        "## Edge Types",
+        "## 边类型",
     ]
     lines.extend(f"- {k}: {v}" for k, v in sorted(edge_types.items()))
     lines.append("")
-    lines.append("## Hubs")
-    lines.extend(f"- `{node}` ({deg})" for node, deg in hubs)
+    lines.append("## 核心枢纽")
+    lines.extend(f"- `{node}` （{deg}）" for node, deg in hubs)
     return "\n".join(lines)
 
 
@@ -178,7 +178,7 @@ def render_html(nodes: list[dict], edges: list[dict]) -> str:
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Novel World Graph</title>
+  <title>世界观叙事图谱</title>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
   <style>body{{margin:0;background:#111;color:#ddd;font-family:Arial}}#graph{{height:100vh}}</style>
 </head>
@@ -201,7 +201,7 @@ new vis.Network(document.getElementById("graph"), {{nodes, edges}}, {{
 def build_graph(open_browser: bool, report: bool, save: bool) -> None:
     pages = all_pages()
     if not pages:
-        print("Wiki is empty.")
+        print("Wiki 为空。")
         return
 
     GRAPH_DIR.mkdir(parents=True, exist_ok=True)
@@ -211,12 +211,12 @@ def build_graph(open_browser: bool, report: bool, save: bool) -> None:
 
     GRAPH_JSON.write_text(json.dumps({"nodes": nodes, "edges": edges, "built": built}, indent=2), encoding="utf-8")
     GRAPH_HTML.write_text(render_html(nodes, edges), encoding="utf-8")
-    print(f"saved: {GRAPH_JSON.relative_to(REPO_ROOT)}")
-    print(f"saved: {GRAPH_HTML.relative_to(REPO_ROOT)}")
+    print(f"已保存：{GRAPH_JSON.relative_to(REPO_ROOT)}")
+    print(f"已保存：{GRAPH_HTML.relative_to(REPO_ROOT)}")
 
     append_log(
-        f"## [{built}] graph | Narrative graph rebuilt\n\n"
-        f"{len(nodes)} nodes and {len(edges)} edges."
+        f"## [{built}] graph | 叙事图谱已重建\n\n"
+        f"共 {len(nodes)} 个节点，{len(edges)} 条边。"
     )
 
     if report:
@@ -225,14 +225,14 @@ def build_graph(open_browser: bool, report: bool, save: bool) -> None:
         if save:
             out = GRAPH_DIR / "graph-report.md"
             out.write_text(report_md, encoding="utf-8")
-            print(f"saved: {out.relative_to(REPO_ROOT)}")
+            print(f"已保存：{out.relative_to(REPO_ROOT)}")
 
     if open_browser:
         webbrowser.open(f"file://{GRAPH_HTML.resolve()}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Build narrative graph")
+    parser = argparse.ArgumentParser(description="构建叙事图谱")
     parser.add_argument("--open", action="store_true")
     parser.add_argument("--report", action="store_true")
     parser.add_argument("--save", action="store_true")

@@ -89,34 +89,34 @@ def run_health() -> dict:
 
 def format_report(results: dict) -> str:
     lines = [
-        f"# Novel Wiki Health Report — {results['date']}",
+        f"# 世界观 Wiki 健康报告 — {results['date']}",
         "",
-        f"Scanned {results['total_pages']} pages.",
+        f"共扫描 {results['total_pages']} 个页面。",
         "",
-        f"## Empty/Stub ({len(results['empty_or_stub'])})",
+        f"## 空页/存根（{len(results['empty_or_stub'])}）",
     ]
     if results["empty_or_stub"]:
         for item in results["empty_or_stub"]:
-            lines.append(f"- `{item['path']}` ({item['status']}, {item['body_bytes']} bytes)")
+            lines.append(f"- `{item['path']}` （{item['status']}，{item['body_bytes']} 字节）")
     else:
-        lines.append("- none")
+        lines.append("- 无")
     lines.append("")
     stale = results["index_sync"]["in_index_not_on_disk"]
     missing = results["index_sync"]["on_disk_not_in_index"]
-    lines.append(f"## Index Sync ({len(stale) + len(missing)})")
-    lines.append("### Stale")
-    lines.extend([f"- `{item}`" for item in stale] or ["- none"])
-    lines.append("### Missing")
-    lines.extend([f"- `{item}`" for item in missing] or ["- none"])
+    lines.append(f"## 索引同步（{len(stale) + len(missing)}）")
+    lines.append("### 索引失效")
+    lines.extend([f"- `{item}`" for item in stale] or ["- 无"])
+    lines.append("### 索引缺失")
+    lines.extend([f"- `{item}`" for item in missing] or ["- 无"])
     lines.append("")
-    lines.append(f"## Log Coverage Missing ({len(results['log_coverage_missing'])})")
-    lines.extend([f"- `{item}`" for item in results["log_coverage_missing"]] or ["- none"])
+    lines.append(f"## 日志覆盖缺口（{len(results['log_coverage_missing'])}）")
+    lines.extend([f"- `{item}`" for item in results["log_coverage_missing"]] or ["- 无"])
     lines.append("")
     return "\n".join(lines)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run deterministic health checks")
+    parser = argparse.ArgumentParser(description="运行确定性健康检查")
     parser.add_argument("--save", action="store_true")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
@@ -130,4 +130,4 @@ if __name__ == "__main__":
         if args.save:
             out = WIKI_DIR / "health-report.md"
             out.write_text(report, encoding="utf-8")
-            print(f"\nSaved: {out.relative_to(REPO_ROOT)}")
+            print(f"\n已保存：{out.relative_to(REPO_ROOT)}")

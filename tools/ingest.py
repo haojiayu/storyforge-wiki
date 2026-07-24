@@ -556,6 +556,43 @@ def validate_pages(changed_pages: list[Path]) -> None:
         print("  validation: no broken wikilinks in changed pages")
 
 
+def validate_ingest(changed_pages: list[str] | None = None) -> dict:
+    """Validate wikilinks and index coverage without calling an LLM."""
+    existing_pages = {p.stem.lower() for p in WIKI_DIR.rglob("*.md")}
+    index_content = read_file(INDEX_FILE).lower()
+
+    if changed_pages:
+        scan_paths = [WIKI_DIR / p for p in changed_pages if (WIKI_DIR / p).exists()]
+    else:
+        scan_paths = [
+            p
+            for p in WIKI_DIR.rglob("*.md")
+            if p.name not in ("index.md", "log.md", "lint-report.md")
+        ]
+
+    broken_links = []
+    for page_path in scan_paths:
+        content = read_file(page_path)
+        rel = str(page_path.relative_to(WIKI_DIR))
+        for link in extract_wikilinks(content):
+            link_stem = Path(link).stem.lower() if "/" in link else link.lower()
+            if link_stem not in existing_pages:
+                broken_links.append((rel, link))
+
+    unindexed = []
+    candidates = changed_pages or [
+        str(p.relative_to(WIKI_DIR))
+        for p in WIKI_DIR.rglob("*.md")
+        if p.name not in ("index.md", "log.md", "lint-report.md", "overview.md")
+    ]
+    for rel_path in candidates:
+        page_path = WIKI_DIR / rel_path
+        if page_path.exists() and page_path.stem.lower() not in index_content:
+            unindexed.append(rel_path)
+
+    return {"broken_links": broken_links, "unindexed": unindexed}
+
+
 def convert_to_md(source: Path) -> Path:
     from markitdown import MarkItDown
 
@@ -640,11 +677,30 @@ def ingest(source_path: str, auto_convert: bool = True) -> None:
 
 
 def main() -> None:
+    if len(sys.argv) == 2 and sys.argv[1] == "--validate-only":
+        print("Running wiki validation (no ingest)...\n")
+        result = validate_ingest()
+        if result["broken_links"]:
+            print(f"Broken wikilinks: {len(result['broken_links'])}")
+            for page, link in result["broken_links"][:20]:
+                print(f"  wiki/{page} -> [[{link}]]")
+        else:
+            print("No broken wikilinks found.")
+
+        if result["unindexed"]:
+            print(f"Pages not in index.md: {len(result['unindexed'])}")
+            for page in result["unindexed"][:20]:
+                print(f"  wiki/{page}")
+        else:
+            print("All pages are indexed.")
+        sys.exit(0)
+
     no_convert = "--no-convert" in sys.argv
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
 
     if not args:
         print("Usage: python tools/ingest.py <file-or-dir> [more files] [--no-convert]")
+        print("       python tools/ingest.py --validate-only")
         sys.exit(1)
 
     paths: list[Path] = []
